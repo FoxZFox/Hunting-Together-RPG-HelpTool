@@ -677,22 +677,9 @@ class Game:
         and pressing it would end the hunt, so then nothing is pressed.
         """
         self.owned = None
-        step('เปิด Adventure Book')
-        if not self.open_window(KEY_N, 'book', MENU_BOOK):
-            self.log('เปิด Adventure Book ไม่ได้')
+        img = self._open_card(area, monster, known_areas)
+        if img is None:
             return False
-        self.tap(BOOK_TAB_CARDS, 1.2)
-        step('เลือกแมพ', area)
-        if not self._select_area(area, known_areas):
-            self.log(f'หาแมพ "{area}" ในหน้า Card Book ไม่เจอ')
-            self.to_hud()
-            return False
-        step('เลือกการ์ด', monster)
-        if not self._select_card(monster):
-            self.log(f'หาการ์ดของ "{monster}" ในแมพ {area} ไม่เจอ')
-            self.to_hud()
-            return False
-        img = self.shot()
         self.owned = parse_owned(self.ocr.text(img, CARD_OWNED_RECT, 2))
         if seen(img, 'stop_btn'):
             self.log(f'กำลังตี {monster} อยู่แล้ว ไม่ต้องกด Hunt ซ้ำ')
@@ -704,6 +691,42 @@ class Game:
         step('กด Hunt', monster)
         self.tap(HUNT_BTN, 1.5)
         return self.to_hud()
+
+    def stop_hunt(self, area, monster, known_areas=()):
+        """Open the Card Book on `monster`'s card and press Stop, ending Hunt this monster: while
+        a hunt is on, Auto goes for that monster only, even after it is switched off and on.
+        True when the button reads Hunt again (or there was no hunt to stop)."""
+        img = self._open_card(area, monster, known_areas)
+        if img is None:
+            return False
+        try:
+            _, xy = find(img, 'stop_btn')
+            if xy is None:
+                return seen(img, 'hunt_btn', 0.7)
+            step('กด Stop', monster)
+            self.tap(xy, 1.2)
+            return seen(self.shot(), 'hunt_btn', 0.7)
+        finally:
+            self.to_hud()
+
+    def _open_card(self, area, monster, known_areas):
+        """The Card Book open on `monster`'s card: its screenshot, or None (back on the HUD)."""
+        step('เปิด Adventure Book')
+        if not self.open_window(KEY_N, 'book', MENU_BOOK):
+            self.log('เปิด Adventure Book ไม่ได้')
+            return None
+        self.tap(BOOK_TAB_CARDS, 1.2)
+        step('เลือกแมพ', area)
+        if not self._select_area(area, known_areas):
+            self.log(f'หาแมพ "{area}" ในหน้า Card Book ไม่เจอ')
+            self.to_hud()
+            return None
+        step('เลือกการ์ด', monster)
+        if not self._select_card(monster):
+            self.log(f'หาการ์ดของ "{monster}" ในแมพ {area} ไม่เจอ')
+            self.to_hud()
+            return None
+        return self.shot()
 
     def fighting(self, monster, looks=5):
         """True when the target bar names `monster` and its HP bar moves within a few looks

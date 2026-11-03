@@ -428,7 +428,7 @@ class Bot:
                         target, progress_at, hunt_fails = want, time.time(), 0
                         st['target'] = list(want)
                         st['hunts'] += 1
-                        retarget = (want[1], time.time()) if bot.get('auto_all_after_hunt', True) else None
+                        retarget = (want, time.time()) if bot.get('auto_all_after_hunt', True) else None
                     else:
                         hunt_fails += 1
                         log(f'กด Hunt ไม่สำเร็จ (ครั้งที่ {hunt_fails}) {save_screen(g.shot(), "hunt-failed")}')
@@ -450,17 +450,23 @@ class Bot:
                     continue
 
                 # Hunt this monster makes Auto go for that one monster only; once we are there,
-                # Auto off and on again (F twice) makes it fight every monster around
+                # Stop in the Card Book and Auto off and on again (F twice) make it fight every
+                # monster around (F alone is not enough: the user checked)
                 if retarget:
-                    name, since = retarget
+                    (area, name), since = retarget
                     if g.fighting(name):
                         retarget = None
-                        step('ปิดแล้วเปิด Auto', name)
-                        log('ถึงที่ฟาร์มแล้ว ปิดแล้วเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัวแถวนั้น' if g.auto_all()
-                            else f'ปิดแล้วเปิด Auto ไม่สำเร็จ ({save_screen(g.shot(), "auto-toggle")})')
+                        step('กด Stop แล้วปิดเปิด Auto', name)
+                        stopped = g.stop_hunt(area, name, known_areas=self.area_names)
+                        toggled = g.auto_all()
+                        if stopped and toggled:
+                            log(f'ถึงที่ฟาร์มแล้ว กด Stop ที่การ์ด {name} แล้วปิดแล้วเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัวแถวนั้น')
+                        else:
+                            log(('กด Stop ไม่สำเร็จ ' if not stopped else '') + ('ปิดแล้วเปิด Auto ไม่สำเร็จ ' if not toggled else '')
+                                + f'({save_screen(g.shot(), "auto-toggle")})')
                         continue
                     if now - since > 180:
-                        log(f'กด Hunt แล้ว 3 นาทียังไม่เห็นว่ากำลังตี {name} เลยไม่ได้ปิดแล้วเปิด Auto')
+                        log(f'กด Hunt แล้ว 3 นาทียังไม่เห็นว่ากำลังตี {name} เลยไม่ได้กด Stop และปิดแล้วเปิด Auto')
                         retarget = None
 
                 if gear_due or now - last_gear > bot['auto_gear_minutes'] * 60:

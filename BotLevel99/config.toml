@@ -44,7 +44,7 @@ check_every_s = 15       # เช็คหน้าจอทุกกี่ว�
 stall_minutes = 3        # EXP ไม่ขยับนานเท่านี้ = กด Hunt ใหม่ (ค้างครบ 3 รอบติดกัน = เข้าเกมใหม่)
 auto_gear_minutes = 15   # กด Auto Gear + Auto Card ทุกกี่นาที (และทุกครั้งที่เลเวลอัพ)
 dismantle = true         # หลัง Auto Gear/Card ให้ย่อยของที่เหลือ (ค้อน > Select All > Dismantle 2 ครั้ง)
-auto_all_after_hunt = true  # กด Hunt แล้วเดินถึงที่ฟาร์ม ปิดแล้วเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัว ไม่ใช่แค่ตัวที่ Hunt
+auto_all_after_hunt = true  # กด Hunt แล้วเดินถึงที่ฟาร์ม กด Stop ใน Card Book แล้วปิดเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัว ไม่ใช่แค่ตัวที่ Hunt
 press_e_every_s = 1      # ระหว่างตีมอน กด E ทุกกี่วินาที เพื่อเปิดกล่อง Hard Worker Box (0 = ไม่กด)
 unknown_timeout_s = 60   # เจอหน้าจอที่ไม่รู้จักนานเท่านี้ = ลองปิด/เข้าเกมใหม่
 restart_after_failures = 3  # LDPlayer ไม่ตอบ/เข้าเกมไม่ได้ติดกันกี่รอบ ถึงจะปิดแล้วเปิด LDPlayer ใหม่
