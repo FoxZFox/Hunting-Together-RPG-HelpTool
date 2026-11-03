@@ -275,7 +275,7 @@ class Panel:
         if any(not self.bot.find_monster(t) for t in targets):
             return 'มีชื่อบอสที่ไม่รู้จัก'
         new = {'targets': json.dumps(targets, ensure_ascii=False)}
-        for key, lo, hi in (('appear_s', 2, 60), ('wait_respawn_s', 0, 600), ('after_kill_s', 0, 30), ('zoom_out_clicks', 0, 30),
+        for key, lo, hi in (('appear_s', 2, 60), ('wait_respawn_s', 0, 600), ('after_kill_s', 0, 30), ('zoom_out_clicks', 0, 30), ('timed_wait_s', 0, 120),
                             ('server_cooldown_min', 1, 60)):
             try:
                 num = int(values.get(key))
@@ -285,6 +285,7 @@ class Panel:
                 return f'{key}: ต้องอยู่ระหว่าง {lo}–{hi}'
             new[key] = str(num)
         new['until_card'] = 'true' if values.get('until_card') else 'false'
+        new['follow_timers'] = 'true' if values.get('follow_timers') else 'false'
         if values.get('server_pick') not in ('fewest', 'random', 'most'):
             return 'server_pick: เลือก fewest, random หรือ most'
         new['server_pick'] = json.dumps(values['server_pick'])

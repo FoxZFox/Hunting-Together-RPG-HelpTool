@@ -87,7 +87,8 @@
             <div data-mode-only="level"><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
             <div data-mode-only="boss" hidden><dt>ย้ายห้อง</dt><dd id="f-hops">0</dd></div>
             <div data-mode-only="boss" hidden><dt>การ์ดที่ได้</dt><dd id="f-cards">0</dd></div>
-            <div><dt>เข้าเกมใหม่</dt><dd id="f-rejoins">0</dd></div>
+            <div data-mode-only="boss" hidden><dt>รู้เวลาเกิด</dt><dd id="f-timers">–</dd></div>
+            <div data-mode-only="level"><dt>เข้าเกมใหม่</dt><dd id="f-rejoins">0</dd></div>
           </dl>
           <div class="now-actions">
             <button class="btn btn-blue" id="gear-btn" type="button">กด Auto Gear และย่อยของ</button>
@@ -203,6 +204,17 @@
               <span class="field-name">เข้าห้องแล้วกดปุ่ม O ซูมกล้องออกกี่ครั้ง</span>
               <input type="number" name="zoom_out_clicks" min="0" max="30" required>
               <span class="field-help">ประมาณ 10 ครั้งจะเห็นป้ายเวลาเกิดบอสทุกครั้ง ใช้ได้แม้ไม่ได้คลิกหน้าต่าง LDPlayer 0 = ไม่ซูม</span>
+            </label>
+            <label class="field field-toggle">
+              <input type="checkbox" name="follow_timers" class="toggle">
+              <span>
+                <span class="field-name">จำเวลาเกิดบอสแล้วย้ายไปห้องที่บอสจะเกิดพอดี</span>
+                <span class="field-help">ทุกห้องที่เห็นป้ายเวลาเกิดหรือฆ่าบอสเอง บอทจำไว้ ตอนย้ายห้องจะเลือกห้องที่บอสเกิดตอนเราไปถึงก่อน</span>
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-name">ไปห้องตามเวลาแล้วบอสยังไม่เกิด รอได้นานสุดกี่วินาที</span>
+              <input type="number" name="timed_wait_s" min="0" max="120" required>
             </label>
             <label class="field">
               <span class="field-name">บอสจะเกิดภายในกี่วินาที ถึงรอในห้อง</span>

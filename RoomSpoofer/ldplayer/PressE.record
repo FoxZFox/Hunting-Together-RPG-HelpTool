@@ -1,0 +1,35 @@
+{
+    "operations": [
+        {
+            "timing": 50,
+            "operationId": "PutScancode",
+            "code": 18,
+            "down": true
+        },
+        {
+            "timing": 150,
+            "operationId": "PutScancode",
+            "code": 18,
+            "down": false
+        }
+    ],
+    "recordInfo": {
+        "loopType": 2,
+        "loopTimes": 1,
+        "circleDuration": 200,
+        "loopInterval": 0,
+        "loopDuration": 0,
+        "accelerateTimes": 1,
+        "accelerateTimesEx": 5,
+        "recordName": "",
+        "createTime": "2026-11-02 20:05:03",
+        "playOnBoot": false,
+        "rebootTiming": 0,
+        "closeTiming": 0,
+        "resolutionWidth": 1920,
+        "resolutionHeight": 1080,
+        "randomTouch": false,
+        "shortkey": 0,
+        "modifyKey": 0
+    }
+}

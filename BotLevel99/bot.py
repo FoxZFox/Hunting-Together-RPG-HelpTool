@@ -88,7 +88,8 @@ class Bot:
         self.status = {'screen': None, 'level': None, 'exp': None, 'target': None,
                        'started_at': None, 'start_level': None, 'finished': False,
                        'hunts': 0, 'rejoins': 0, 'restarts': 0,
-                       'mode': None, 'kills': 0, 'hops': 0, 'cards': [], 'boss_done': []}
+                       'mode': None, 'kills': 0, 'hops': 0, 'cards': [], 'boss_done': [],
+                       'timed_hops': 0, 'timers': 0, 'next_due': None}
         place = re.search(r'placeId=(\d+)', cfg['bot']['join_url'])
         self.servers = Servers(place.group(1)) if place else None
         self.failures = 0           # rounds in a row where LDPlayer/adb did not answer or a rejoin failed
@@ -161,11 +162,15 @@ class Bot:
         self.wait(3)
         return self._join(self.cfg['bot']['join_url'])
 
-    def hop(self, why):
-        """Move to another server: leave through the Roblox menu (so the game saves), then
-        join the emptiest server not visited in the last 15 minutes."""
+    def hop(self, why, boss=None):
+        """Move to another server: leave through the Roblox menu (so the game saves), then join
+        a server whose `boss` respawns about when we get there, or else one picked by the panel's
+        rule (fewest players, random...) that we have not been to lately."""
         log(f'{why} → ย้ายห้อง')
-        self.status['hops'] += 1
+        st = self.status
+        st['hops'] += 1
+        self.hop_started = time.time()
+        self.timed = None
         if not self.game.leave():
             self.dev.stop_roblox()
             self.wait(3)
@@ -174,15 +179,24 @@ class Bot:
         try:
             cfg = self.cfg.get('boss', {})
             if self.servers:
-                self.servers.cooldown = cfg.get('server_cooldown_min', 12) * 60
-                skip = cfg.get('server_skip', [0, 9])
-                server = self.servers.pick(cfg.get('server_pick', 'fewest'), (min(skip), max(skip)))
+                due = self.servers.due(boss) if boss and cfg.get('follow_timers', True) else None
+                if due:
+                    server, self.timed = due
+                    st['timed_hops'] += 1
+                    log(f'ไปห้องที่จำเวลาไว้: {boss} จะเกิดในอีก {self.timed:.0f} วิ '
+                        f'(ย้ายห้องใช้ประมาณ {self.servers.travel:.0f} วิ)')
+                else:
+                    self.servers.cooldown = cfg.get('server_cooldown_min', 12) * 60
+                    skip = cfg.get('server_skip', [0, 9])
+                    server = self.servers.pick(cfg.get('server_pick', 'fewest'), (min(skip), max(skip)))
         except (OSError, ValueError) as e:
             log(f'ดึงรายชื่อห้องไม่ได้ ({e}) เข้าห้องสุ่มแทน')
         if server:
             log(f'เข้าห้องที่มีคน {server["playing"]}/{server["maxPlayers"]} คน')
-            step('เข้าห้องใหม่', f'{server["playing"]}/{server["maxPlayers"]} คน')
+            step('เข้าห้องใหม่', f'{server["playing"]}/{server["maxPlayers"]} คน' + (' (ตามเวลา)' if self.timed else ''))
             return self._join(self.servers.join_url(server))
+        if self.servers:
+            self.servers.current = None         # a random server: its id is unknown
         return self._join(self.cfg['bot']['join_url'])
 
     def _join(self, url):
@@ -435,6 +449,7 @@ class Bot:
         done = set()
         hunt_fails = lost = 0
         near = None                     # boss whose room we start next to (a hop puts you back where you were)
+        self.hop_started = self.timed = None
         log('เริ่มฟาร์มบอส')
         while not self.stop_event.is_set():
             cfg = self.cfg.get('boss', {})      # re-read each round: the control panel can change it
@@ -466,7 +481,7 @@ class Bot:
                     hunt_fails += 1
                     if hunt_fails >= 3:
                         hunt_fails = 0
-                        if not self.hop('กด Hunt บอสไม่สำเร็จหลายรอบ'):
+                        if not self.hop('กด Hunt บอสไม่สำเร็จหลายรอบ', want[1]):
                             self.failures += 1
                     continue
                 hunt_fails = 0
@@ -478,10 +493,16 @@ class Bot:
                     done.add(todo[0])
                     st['boss_done'] = sorted(done)
                     continue
+                if self.hop_started and self.servers:   # leave -> watching: how long a hop really takes
+                    self.servers.note_travel(time.time() - self.hop_started)
+                    self.hop_started = None
                 # from the room's door the HP bar shows within a few seconds; from elsewhere it is a walk
                 limit = cfg.get('appear_s', 6) if near == want[1] else 90
-                result, in_room = self.watch_boss(want[1], cfg.get('wait_respawn_s', 0), limit,
-                                                  cfg.get('after_kill_s', 2))
+                wait_s = cfg.get('wait_respawn_s', 0)
+                if self.timed is not None:              # came here for its respawn: wait for it
+                    wait_s = max(wait_s, cfg.get('timed_wait_s', 40))
+                result, in_room = self.watch_boss(want[1], wait_s, limit, cfg.get('after_kill_s', 2))
+                self.update_schedule(want[1])
                 if in_room:
                     near, lost = want[1], 0
                 if result == 'lost':
@@ -499,7 +520,7 @@ class Bot:
                     st['boss_done'] = sorted(done)
                 why = {'killed': f'ฆ่า {want[1]} แล้ว', 'card': f'ได้การ์ด {want[1]} แล้ว',
                        'dead': f'{want[1]} ยังไม่เกิด', 'lost': f'หา {want[1]} ไม่เจอ'}[result]
-                if not self.stop_event.is_set() and not self.hop(why):
+                if not self.stop_event.is_set() and not self.hop(why, want[1]):
                     self.failures += 1
             except DeviceError as e:
                 self.failures += 1
@@ -515,7 +536,7 @@ class Bot:
         or 'lost' (no HP bar or timer within `limit` seconds). After a kill it keeps looking
         for an "Obtained!" popup for `after_kill` seconds."""
         g, st = self.game, self.status
-        start, fought, got = time.time(), None, False
+        start, fought, got, sign_at = time.time(), None, False, None
         step('ดูห้องบอส', boss)
         while not self.stop_event.is_set():
             img = g.shot()
@@ -531,17 +552,35 @@ class Bot:
                 if fought and (left is not None or time.time() - fought > 4):
                     st['kills'] += 1
                     log(f'ฆ่า {boss} แล้ว (รวม {st["kills"]} ตัว)')
+                    if self.servers:                    # a world boss is back 10 minutes after it dies
+                        self.servers.note_respawn(boss, left if left is not None else 600 - (time.time() - fought))
                     step('รอดูการ์ด', boss)
                     got |= self.wait_card(boss, after_kill)
                     return ('card' if got else 'killed'), True
+                if left is not None and self.servers:
+                    self.servers.note_respawn(boss, left)
                 if left is not None and left > wait_s:
                     log(f'{boss} ตายอยู่ จะเกิดอีก {left // 60}:{left % 60:02d}')
                     return 'dead', True
-                if left is None and not fought and time.time() - start > limit:
-                    log(f'กด Hunt แล้ว {limit} วินาทียังไม่เห็นแถบเลือด {boss}')
-                    return 'lost', False
+                if left is not None and not fought:
+                    if sign_at is None:
+                        log(f'{boss} จะเกิดอีก {left} วิ รออยู่ในห้อง')
+                        step('รอบอสเกิด', boss)
+                    sign_at = time.time()
+                # after the sign goes the boss still needs a moment to appear and be targeted
+                since, allowed = (sign_at, max(limit, 8)) if sign_at else (start, limit)
+                if left is None and not fought and time.time() - since > allowed:
+                    log(f'กด Hunt แล้ว {limit} วินาทียังไม่เห็นแถบเลือด {boss}' if not sign_at
+                        else f'{boss} น่าจะเกิดแล้วแต่ไม่เห็นแถบเลือด')
+                    return 'lost', bool(sign_at)
             self.wait(0.5)
         return ('card' if got else 'lost'), bool(fought)
+
+    def update_schedule(self, boss):
+        """For the panel: how many servers have a known respawn of `boss`, and the soonest."""
+        times = self.servers.schedule(boss) if self.servers else []
+        self.status['timers'] = len(times)
+        self.status['next_due'] = round(times[0]) if times else None
 
     def wait_card(self, boss, seconds):
         got = False
