@@ -23,22 +23,34 @@
       </svg>
       <div>
         <h1>BotLevel99</h1>
-        <p class="brand-sub">ปั้นคลาสให้ถึง 99 ใน Hunting Together RPG</p>
+        <p class="brand-sub">เก็บเลเวลและล่าการ์ดบอสใน Hunting Together RPG</p>
       </div>
     </div>
     <div class="topbar-actions">
+      <div class="mode-switch" id="mode-switch" role="radiogroup" aria-label="บอทจะทำอะไร">
+        <button class="mode-btn" type="button" role="radio" data-mode="level" aria-checked="true">เก็บเลเวล</button>
+        <button class="mode-btn" type="button" role="radio" data-mode="boss" aria-checked="false">ล่าบอส</button>
+      </div>
       <span class="chip" id="run-chip"><span class="chip-dot"></span><span id="run-text">กำลังเชื่อมต่อ</span></span>
       <button class="btn btn-go btn-big" id="toggle-btn" type="button" disabled>เริ่มบอท</button>
     </div>
   </header>
 
   <main>
-    <section class="window route-window" aria-labelledby="route-title">
+    <section class="window route-window" data-mode-only="level" aria-labelledby="route-title">
       <div class="window-bar">
         <h2 id="route-title">เส้นทางสู่ Lv.99</h2>
         <p class="window-note" id="route-note"></p>
       </div>
       <div class="route" id="route" tabindex="0" aria-label="ช่วงเลเวลในแผนการตี"></div>
+    </section>
+
+    <section class="window route-window" data-mode-only="boss" aria-labelledby="boss-route-title" hidden>
+      <div class="window-bar">
+        <h2 id="boss-route-title">บอสที่จะล่า</h2>
+        <p class="window-note" id="boss-route-note"></p>
+      </div>
+      <div class="route" id="boss-route" aria-label="บอสโลก กดเพื่อเลือกหรือเลิกเลือก"></div>
     </section>
 
     <div class="grid">
@@ -58,7 +70,7 @@
               <p class="label">กำลังตี</p>
               <p class="target-name" id="target-name">–</p>
               <p class="target-area" id="target-area"></p>
-              <div class="exp" aria-label="EXP ของเลเวลนี้">
+              <div class="exp" data-mode-only="level" aria-label="EXP ของเลเวลนี้">
                 <div class="exp-fill" id="exp-fill"></div>
                 <span class="exp-text" id="exp-text">EXP –</span>
               </div>
@@ -66,11 +78,15 @@
             </div>
           </div>
           <dl class="facts">
-            <div><dt>เริ่มที่</dt><dd id="f-start">–</dd></div>
-            <div><dt>ขึ้นมาแล้ว</dt><dd id="f-gained">–</dd></div>
+            <div data-mode-only="level"><dt>เริ่มที่</dt><dd id="f-start">–</dd></div>
+            <div data-mode-only="level"><dt>ขึ้นมาแล้ว</dt><dd id="f-gained">–</dd></div>
+            <div data-mode-only="boss" hidden><dt>ฆ่าบอส</dt><dd id="f-kills">0</dd></div>
+            <div data-mode-only="boss" hidden><dt>เฉลี่ยตัวละ</dt><dd id="f-per-kill">–</dd></div>
             <div><dt>รันมา</dt><dd id="f-time">–</dd></div>
-            <div><dt>กด Hunt</dt><dd id="f-hunts">0</dd></div>
-            <div><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
+            <div data-mode-only="level"><dt>กด Hunt</dt><dd id="f-hunts">0</dd></div>
+            <div data-mode-only="level"><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
+            <div data-mode-only="boss" hidden><dt>ย้ายห้อง</dt><dd id="f-hops">0</dd></div>
+            <div data-mode-only="boss" hidden><dt>การ์ดที่ได้</dt><dd id="f-cards">0</dd></div>
             <div><dt>เข้าเกมใหม่</dt><dd id="f-rejoins">0</dd></div>
           </dl>
           <div class="now-actions">
@@ -103,9 +119,9 @@
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="true">บันทึก</button>
         <button class="tab" role="tab" id="tab-steps" aria-controls="panel-steps" aria-selected="false">ขั้นตอน</button>
-        <button class="tab" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="false">แผนการตี</button>
+        <button class="tab tab-mode" role="tab" id="tab-plan" data-mode-only="level" aria-controls="panel-plan" aria-selected="false">แผนการตี</button>
+        <button class="tab tab-mode" role="tab" id="tab-boss" data-mode-only="boss" aria-controls="panel-boss" aria-selected="false" hidden>ตั้งค่าล่าบอส</button>
         <button class="tab" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false">ตารางอัพ Stats</button>
-        <button class="tab" role="tab" id="tab-boss" aria-controls="panel-boss" aria-selected="false">ฟาร์มบอส</button>
         <button class="tab" role="tab" id="tab-monsters" aria-controls="panel-monsters" aria-selected="false">มอนทั้งหมด</button>
         <button class="tab" role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false">ตั้งค่า</button>
       </div>
@@ -170,12 +186,8 @@
       </div>
 
       <div class="tab-panel" role="tabpanel" id="panel-boss" aria-labelledby="tab-boss" hidden>
-        <p class="panel-intro">บอทกด Hunt ที่การ์ดบอส ถ้าบอสอยู่ก็ตีจนตายแล้วดูว่าได้การ์ดไหม ถ้าไม่เห็นแถบเลือดบอสก็ย้ายไปห้องที่คนน้อยที่สุดซึ่งยังไม่ได้ไปใน 15 นาที (ออกด้วยปุ่ม Leave ของ Roblox ให้เกมเซฟก่อน) ทำทีละตัวตามลำดับที่ติ๊กไว้</p>
+        <p class="panel-intro">เลือกบอสที่จะล่าได้ที่แผง "บอสที่จะล่า" ด้านบน (กดที่บอสเพื่อเลือกหรือเลิกเลือก ล่าตามลำดับเลข) บอทกด Hunt ที่การ์ดบอส ถ้าบอสอยู่ก็ตีจนตายแล้วดูว่าได้การ์ดไหม ถ้าไม่เห็นแถบเลือดบอสก็ออกด้วยปุ่ม Leave ของ Roblox แล้วย้ายไปห้องใหม่</p>
         <form class="boss-form" id="boss-form">
-          <fieldset class="boss-pick">
-            <legend class="field-name">บอสที่จะฟาร์ม</legend>
-            <div class="boss-list" id="boss-list"></div>
-          </fieldset>
           <div class="boss-settings">
             <label class="field">
               <span class="field-name">กด Hunt แล้วกี่วินาทีไม่เห็นแถบเลือดบอส ถึงย้ายห้อง</span>
@@ -228,18 +240,13 @@
             </label>
           </div>
           <div class="panel-actions">
-            <dl class="boss-facts">
-              <div><dt>ฆ่าบอส</dt><dd id="b-kills">0</dd></div>
-              <div><dt>ย้ายห้อง</dt><dd id="b-hops">0</dd></div>
-              <div><dt>การ์ดที่ได้</dt><dd id="b-cards">0</dd></div>
-            </dl>
             <span class="spacer"></span>
             <span class="form-msg" id="boss-msg" role="status"></span>
-            <button class="btn btn-ghost" type="submit">บันทึก</button>
-            <button class="btn btn-go" id="boss-start" type="button">เริ่มฟาร์มบอส</button>
+            <button class="btn btn-go" type="submit">บันทึกการตั้งค่าล่าบอส</button>
           </div>
         </form>
-        <ol class="card-log" id="card-log"></ol>
+        <h3 class="sub-title">การ์ดที่ได้ระหว่างล่าบอส</h3>
+        <ol class="card-log" id="card-log"><li class="log-empty">ยังไม่ได้การ์ด</li></ol>
       </div>
 
       <div class="tab-panel" role="tabpanel" id="panel-monsters" aria-labelledby="tab-monsters" hidden>

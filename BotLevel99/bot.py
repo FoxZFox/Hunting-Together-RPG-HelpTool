@@ -88,7 +88,7 @@ class Bot:
         self.status = {'screen': None, 'level': None, 'exp': None, 'target': None,
                        'started_at': None, 'start_level': None, 'finished': False,
                        'hunts': 0, 'rejoins': 0, 'restarts': 0,
-                       'mode': None, 'kills': 0, 'hops': 0, 'cards': []}
+                       'mode': None, 'kills': 0, 'hops': 0, 'cards': [], 'boss_done': []}
         place = re.search(r'placeId=(\d+)', cfg['bot']['join_url'])
         self.servers = Servers(place.group(1)) if place else None
         self.failures = 0           # rounds in a row where LDPlayer/adb did not answer or a rejoin failed
@@ -430,7 +430,7 @@ class Bot:
         """Go to each chosen world boss in turn: kill it when it is up, hop to another server
         when it is down. A boss is done once its card drops (unless until_card is off)."""
         g, st = self.game, self.status
-        st.update(started_at=time.time(), finished=False, target=None, mode='boss')
+        st.update(started_at=time.time(), finished=False, target=None, mode='boss', boss_done=[])
         self.stop_event.clear()
         done = set()
         hunt_fails = lost = 0
@@ -458,6 +458,7 @@ class Bot:
                 if not want:
                     log(f'ไม่รู้จักบอส "{todo[0]}" ข้ามไป')
                     done.add(todo[0])
+                    st['boss_done'] = sorted(done)
                     continue
                 if st['target'] != list(want):
                     log(f'ไปตีบอส {want[1]} ที่ {want[0]}')
@@ -475,6 +476,7 @@ class Bot:
                     # the card page says it is ours (also catches a drop whose popup was missed)
                     log(f'มีการ์ด {want[1]} แล้ว ไปบอสตัวถัดไป')
                     done.add(todo[0])
+                    st['boss_done'] = sorted(done)
                     continue
                 # from the room's door the HP bar shows within a few seconds; from elsewhere it is a walk
                 limit = cfg.get('appear_s', 6) if near == want[1] else 90
@@ -494,6 +496,7 @@ class Bot:
                     lost = 0
                 if result == 'card' and cfg.get('until_card', True):
                     done.add(todo[0])
+                    st['boss_done'] = sorted(done)
                 why = {'killed': f'ฆ่า {want[1]} แล้ว', 'card': f'ได้การ์ด {want[1]} แล้ว',
                        'dead': f'{want[1]} ยังไม่เกิด', 'lost': f'หา {want[1]} ไม่เจอ'}[result]
                 if not self.stop_event.is_set() and not self.hop(why):

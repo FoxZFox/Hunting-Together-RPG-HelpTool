@@ -67,6 +67,18 @@ button, input, select { font: inherit; color: inherit; }
 .brand h1 { font-size: 28px; line-height: 1.1; letter-spacing: 0.01em; }
 .brand-sub { color: var(--ink-soft); font-size: 14px; }
 .topbar-actions { display: flex; align-items: center; gap: 14px; }
+[hidden] { display: none !important; }
+
+/* mode switch: what the start button runs */
+.mode-switch { display: inline-flex; padding: 4px; gap: 4px; border: var(--line); border-radius: 14px; background: var(--paper-dim); }
+.mode-btn {
+  min-height: 40px; padding: 4px 16px; border: 0; border-radius: 10px; background: transparent;
+  font-family: var(--font-display); font-weight: 500; font-size: 16px; color: var(--ink-soft); cursor: pointer;
+}
+.mode-btn[aria-checked="true"] { background: var(--blue); color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; box-shadow: 0 3px 0 #1c5aa6; }
+.mode-btn[data-mode="boss"][aria-checked="true"] { background: var(--halt); box-shadow: 0 3px 0 var(--halt-dark); }
+.mode-btn:disabled { cursor: not-allowed; }
+.mode-btn:disabled:not([aria-checked="true"]) { opacity: 0.45; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 8px;
@@ -177,6 +189,18 @@ main { max-width: 1240px; margin: 0 auto; padding: 12px 24px 48px; display: grid
 }
 .pin-tail { width: 14px; height: 14px; margin-top: -8px; background: var(--gold); border-right: var(--line); border-bottom: var(--line); transform: rotate(45deg); }
 body.is-running .pin { animation: bob 1.6s ease-in-out infinite; }
+
+/* boss tiles: the same cards as the route, but buttons that pick a boss */
+.boss-tile { text-align: left; font: inherit; color: inherit; cursor: pointer; flex-basis: 190px; }
+.boss-tile:not(.is-picked) { background: var(--paper-dim); box-shadow: 0 2px 0 var(--ink); }
+.boss-tile:not(.is-picked) .stop-name { color: var(--ink-soft); }
+.boss-tile.is-picked:not(.is-now):not(.is-done) { box-shadow: 0 4px 0 var(--halt-dark), 0 4px 0 3px var(--ink); }
+.boss-order {
+  position: absolute; right: 8px; top: 14px; min-width: 26px; height: 26px; padding: 0 6px;
+  border: 2px solid var(--ink); border-radius: 13px; background: var(--halt); color: #fff;
+  font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 22px; text-align: center;
+}
+.sub-title { margin: 22px 0 8px; font-family: var(--font-display); font-weight: 600; font-size: 17px; }
 @keyframes bob { 50% { transform: translate(-50%, -5px); } }
 
 /* ---- now --------------------------------------------------------------- */
@@ -406,7 +430,9 @@ input[type="number"] { font-variant-numeric: tabular-nums; }
 }
 @media (max-width: 620px) {
   .topbar { flex-wrap: wrap; padding: 16px 16px 4px; }
-  .topbar-actions { width: 100%; justify-content: space-between; }
+  .topbar-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+  .mode-switch { width: 100%; }
+  .mode-btn { flex: 1; }
   main { padding: 10px 16px 40px; }
   .now-head { flex-direction: column; align-items: flex-start; }
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }

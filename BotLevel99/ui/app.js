@@ -30,6 +30,9 @@ const app = {
   newJobs: [],           // classes added in the page but not saved yet
   lastRouteKey: '',
   lastScrolledLevel: null,
+  mode: 'level',         // what the start button runs: 'level' or 'boss' ([bot] mode)
+  bossTargets: [],       // bosses picked in the boss window, in hunting order
+  lastBossKey: '',
 };
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -77,9 +80,14 @@ async function loadConfig() {
     app.draft = app.cfg.plan.map((s) => ({ ...s }));
     renderPlan();
   }
+  if (!app.running) app.mode = app.cfg.mode || 'level';
+  app.bossTargets = [...(app.cfg.boss?.targets || [])];
+  app.lastBossKey = '';
   renderMonsters();
   fillSettings();
   fillBoss();
+  applyMode();
+  renderBossRoute();
   if (!app.statDirty) loadStatDraft(app.statJob);
   app.lastRouteKey = '';
   renderRoute();
@@ -105,6 +113,7 @@ async function poll() {
   renderTop();
   renderNow();
   renderRoute();
+  renderBossRoute();
   renderStatNow();
   renderBossLive();
   renderSteps();
@@ -113,38 +122,78 @@ async function poll() {
 }
 
 // ---- top bar --------------------------------------------------------------
+// ---- mode: level or boss -----------------------------------------------------
+// The mode picks the top window, the "now" facts and the mode's own tab; the other
+// tabs (log, steps, stats, monsters, settings) are shared by both modes.
+const shownMode = () => (app.running && app.status.mode) || app.mode;
+
+function applyMode() {
+  const mode = shownMode();
+  document.body.dataset.mode = mode;
+  for (const node of document.querySelectorAll('[data-mode-only]')) node.hidden = node.dataset.modeOnly !== mode;
+  for (const b of document.querySelectorAll('.mode-btn')) {
+    b.setAttribute('aria-checked', b.dataset.mode === mode);
+    b.disabled = !app.online || app.running || !!app.task;
+  }
+  const open = tabs.find((t) => t.getAttribute('aria-selected') === 'true');
+  if (open?.hidden) selectTab(tabs.find((t) => t.classList.contains('tab-mode') && !t.hidden) || tabs[0]);
+}
+
+for (const b of document.querySelectorAll('.mode-btn')) {
+  b.addEventListener('click', async () => {
+    if (b.dataset.mode === app.mode || app.running || app.task) return;
+    const before = app.mode;
+    app.mode = b.dataset.mode;
+    applyMode(); renderTop(); renderNow();
+    const res = await api('/api/mode', { mode: app.mode }).catch(() => null);
+    if (!res?.ok) {
+      app.mode = before;
+      applyMode(); renderTop(); renderNow();
+      $('#run-text').textContent = res?.error || 'เปลี่ยนโหมดไม่สำเร็จ';
+    }
+  });
+}
+
 function renderTop() {
   const chip = $('#run-chip');
   const text = $('#run-text');
   const btn = $('#toggle-btn');
+  const boss = shownMode() === 'boss';
+  const startText = boss ? 'เริ่มล่าบอส' : 'เริ่มเก็บเลเวล';
+  applyMode();
   document.body.classList.toggle('is-running', app.running && !app.stopping);
   btn.className = 'btn btn-big ' + (app.running ? 'btn-halt' : 'btn-go');
   btn.disabled = !app.online || app.stopping || !!app.task;
   if (!app.online) {
     chip.dataset.tone = 'bad';
     text.textContent = 'ติดต่อตัวบอทไม่ได้';
-    btn.textContent = 'เริ่มบอท';
+    btn.textContent = startText;
   } else if (app.stopping) {
     chip.dataset.tone = 'busy';
     text.textContent = 'กำลังหยุด รอให้ขั้นตอนนี้จบก่อน';
     btn.textContent = 'กำลังหยุด';
   } else if (app.running) {
     chip.dataset.tone = 'run';
-    text.textContent = app.status.mode === 'boss' ? 'กำลังฟาร์มบอส' : 'บอทเก็บเลเวลทำงานอยู่';
+    text.textContent = boss ? 'กำลังล่าบอส' : 'กำลังเก็บเลเวล';
     btn.textContent = 'หยุดบอท';
   } else if (app.task) {
     chip.dataset.tone = 'busy';
     text.textContent = `กำลัง${TASK_NAMES[app.task] || app.task}`;
-    btn.textContent = 'เริ่มบอท';
+    btn.textContent = startText;
   } else {
     chip.dataset.tone = app.status.finished ? 'run' : '';
-    text.textContent = app.status.finished ? 'ถึงเลเวลเป้าหมายแล้ว' : 'บอทหยุดอยู่';
-    btn.textContent = 'เริ่มบอท';
+    const done = app.status.finished && app.status.mode === shownMode();
+    text.textContent = done ? (boss ? 'ได้การ์ดบอสครบแล้ว' : 'ถึงเลเวลเป้าหมายแล้ว') : 'บอทหยุดอยู่';
+    btn.textContent = startText;
   }
 }
 
 $('#toggle-btn').addEventListener('click', async () => {
   const btn = $('#toggle-btn');
+  if (!app.running && shownMode() === 'boss' && !app.bossTargets.length) {
+    $('#run-text').textContent = 'เลือกบอสที่จะล่าก่อน (แผงบอสที่จะล่า)';
+    return;
+  }
   btn.disabled = true;
   const res = await api(app.running ? '/api/stop' : '/api/start', {}).catch(() => null);
   if (res && !res.ok && res.error) $('#run-text').textContent = res.error;
@@ -165,6 +214,13 @@ function renderNow() {
   const st = app.status || {};
   const level = st.level;
   $('#level').textContent = level ?? '–';
+  const started = st.started_at && app.running;
+  $('#f-time').textContent = started ? duration(app.serverNow - st.started_at) : '–';
+  $('#f-rejoins').textContent = st.restarts
+    ? `${st.rejoins || 0} ครั้ง (เปิด LDPlayer ใหม่ ${st.restarts})`
+    : `${st.rejoins || 0} ครั้ง`;
+  $('#screen-state').textContent = st.screen ? SCREEN_NAMES[st.screen] || st.screen : '';
+  if (shownMode() === 'boss') return renderNowBoss(st);
 
   // while running show what the bot hunted; while stopped show what the plan says
   const target = (app.running && st.target?.length ? st.target : st.plan_target) || [];
@@ -187,17 +243,30 @@ function renderNow() {
     nextBox.textContent = 'ช่วงสุดท้ายของแผนแล้ว';
   }
 
-  const started = st.started_at && app.running;
   $('#f-start').textContent = st.start_level ? `Lv.${st.start_level}` : '–';
   $('#f-gained').textContent = st.start_level && level ? `${level - st.start_level} เลเวล` : '–';
-  $('#f-time').textContent = started ? duration(app.serverNow - st.started_at) : '–';
   $('#f-hunts').textContent = `${st.hunts || 0} ครั้ง`;
   $('#f-dismantled').textContent = `${st.dismantled || 0} ชิ้น`;
-  $('#f-rejoins').textContent = st.restarts
-    ? `${st.rejoins || 0} ครั้ง (เปิด LDPlayer ใหม่ ${st.restarts})`
-    : `${st.rejoins || 0} ครั้ง`;
+}
 
-  $('#screen-state').textContent = st.screen ? SCREEN_NAMES[st.screen] || st.screen : '';
+function renderNowBoss(st) {
+  const running = app.running && st.mode === 'boss';
+  const left = app.bossTargets.filter((b) => !(st.boss_done || []).includes(b));
+  const current = running && st.target?.length ? st.target[1] : left[0];
+  $('.now-target .label').textContent = running ? 'กำลังล่า' : 'จะล่า';
+  $('#target-name').textContent = current || 'ยังไม่ได้เลือกบอส';
+  $('#target-area').textContent = current ? lookup(current)?.area || '' : 'กดเลือกบอสที่แผง "บอสที่จะล่า" ด้านบน';
+  const next = left[left.indexOf(current) + 1];
+  const nextBox = $('#next-step');
+  nextBox.replaceChildren();
+  if (next) nextBox.append('ถัดไป ', el('strong', { text: next }), ' (ตอนได้การ์ดตัวนี้แล้ว)');
+  else if (current) nextBox.textContent = 'ตัวสุดท้ายในรายการ';
+  const kills = st.kills || 0;
+  const ran = running ? app.serverNow - st.started_at : 0;
+  $('#f-kills').textContent = `${kills} ตัว`;
+  $('#f-per-kill').textContent = kills && ran ? secs(ran / kills) : '–';
+  $('#f-hops').textContent = `${st.hops || 0} ครั้ง`;
+  $('#f-cards').textContent = `${(st.cards || []).length} ใบ`;
 }
 
 $('#gear-btn').addEventListener('click', async () => {
@@ -210,7 +279,6 @@ function updateLiveBits() {
   $('#gear-btn').disabled = busy;
   $('#scan-btn').disabled = busy;
   $('#stats-run').disabled = busy;
-  $('#boss-start').disabled = busy;
   markStatRows();
   $('#busy-hint').hidden = !app.running;
   for (const b of document.querySelectorAll('.hunt-btn')) b.disabled = busy;
@@ -584,15 +652,6 @@ $('#stats-run').addEventListener('click', () => api('/api/stats/run', {}).catch(
 // ---- boss card farm ---------------------------------------------------------
 function fillBoss() {
   const cfg = app.cfg?.boss || {};
-  const targets = cfg.targets || [];
-  const list = $('#boss-list');
-  list.replaceChildren();
-  for (const b of app.cfg?.bosses || []) {
-    list.append(el('label', { class: 'check boss-option' },
-      el('input', { type: 'checkbox', value: b.name, checked: targets.includes(b.name) }),
-      el('span', {}, el('strong', { text: b.name }), ` Lv.${b.level ?? '?'}`)));
-  }
-  if (!list.children.length) list.append(el('p', { class: 'stat-now-empty', text: 'ยังไม่มีข้อมูลบอส กดสแกนข้อมูลมอนใหม่ในแท็บมอนทั้งหมดก่อน' }));
   const form = $('#boss-form');
   form.elements.appear_s.value = cfg.appear_s ?? 6;
   form.elements.wait_respawn_s.value = cfg.wait_respawn_s ?? 0;
@@ -609,7 +668,7 @@ function fillBoss() {
 function bossValues() {
   const form = $('#boss-form');
   return {
-    targets: [...form.querySelectorAll('.boss-option input:checked')].map((i) => i.value),
+    targets: [...app.bossTargets],
     appear_s: Number(form.elements.appear_s.value),
     wait_respawn_s: Number(form.elements.wait_respawn_s.value),
     after_kill_s: Number(form.elements.after_kill_s.value),
@@ -632,16 +691,63 @@ async function saveBoss() {
 }
 
 function renderBossLive() {
-  const st = app.status || {};
-  $('#b-kills').textContent = `${st.kills || 0} ตัว`;
-  $('#b-hops').textContent = `${st.hops || 0} ครั้ง`;
-  const cards = st.cards || [];
-  $('#b-cards').textContent = `${cards.length} ใบ`;
+  const cards = app.status?.cards || [];
   const log = $('#card-log');
-  if (log.childElementCount === cards.length) return;
+  if (log.dataset.count === String(cards.length)) return;
+  log.dataset.count = cards.length;
   log.replaceChildren(...cards.slice().reverse().map(([time, name, mine]) =>
     el('li', { class: mine ? 'is-boss-card' : null }, el('time', { text: time }),
-      el('span', { text: mine ? `${name} (การ์ดบอสที่ฟาร์มอยู่)` : name }))));
+      el('span', { text: mine ? `${name} (การ์ดบอสที่ล่าอยู่)` : name }))));
+  if (!cards.length) log.append(el('li', { class: 'log-empty', text: 'ยังไม่ได้การ์ด' }));
+}
+
+// The boss window: every world boss as a tile. Picked ones carry their hunting order;
+// clicking a tile picks or unpicks it and saves right away.
+function renderBossRoute() {
+  const route = $('#boss-route');
+  const bosses = app.cfg?.bosses || [];
+  const st = app.status || {};
+  const current = app.running && st.mode === 'boss' ? st.target?.[1] : null;
+  const key = JSON.stringify([bosses.map((b) => b.name), app.bossTargets, st.boss_done, current]);
+  if (key === app.lastBossKey) return;
+  app.lastBossKey = key;
+  route.replaceChildren();
+  if (!bosses.length) {
+    route.append(el('p', { class: 'route-empty', text: 'ยังไม่มีข้อมูลบอส กดสแกนข้อมูลมอนใหม่ในแท็บมอนทั้งหมดก่อน' }));
+    return;
+  }
+  const done = st.boss_done || [];
+  for (const b of bosses) {
+    const order = app.bossTargets.indexOf(b.name);
+    const isDone = done.includes(b.name);
+    const isNow = b.name === current;
+    const tile = el('button', {
+      type: 'button', 'aria-pressed': order >= 0 ? 'true' : 'false', 'data-el': lookup(b.name)?.element || null,
+      class: `stop boss-tile${order >= 0 ? ' is-picked' : ''}${isNow ? ' is-now' : ''}${isDone ? ' is-done' : ''}`,
+      onclick: () => toggleBoss(b.name),
+    },
+    el('p', { class: 'stop-range', text: `Lv.${b.level ?? '?'}` }),
+    el('p', { class: 'stop-name', text: b.name }),
+    el('p', { class: 'stop-area', text: isDone ? 'ได้การ์ดแล้ว' : order >= 0 ? `ล่าเป็นลำดับที่ ${order + 1}` : 'กดเพื่อเลือก' }));
+    if (order >= 0 && !isDone) tile.append(el('span', { class: 'boss-order', text: String(order + 1) }));
+    if (isDone) tile.append(el('span', { class: 'stop-check', 'aria-label': 'ได้การ์ดแล้ว' }, checkIcon()));
+    if (isNow) {
+      tile.append(el('div', { class: 'pin', 'aria-hidden': 'true' },
+        el('span', { class: 'pin-badge', text: 'กำลังล่า' }), el('span', { class: 'pin-tail' })));
+    }
+    route.append(tile);
+  }
+  $('#boss-route-note').textContent = app.bossTargets.length
+    ? `เลือกไว้ ${app.bossTargets.length} ตัว · กดที่บอสเพื่อเลือกหรือเลิกเลือก`
+    : 'กดที่บอสเพื่อเลือกตัวที่จะล่า';
+}
+
+async function toggleBoss(name) {
+  const i = app.bossTargets.indexOf(name);
+  if (i >= 0) app.bossTargets.splice(i, 1); else app.bossTargets.push(name);
+  renderBossRoute();
+  renderNow();
+  if (!(await saveBoss())) $('#boss-route-note').textContent = 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง';
 }
 
 $('#boss-form').addEventListener('submit', async (e) => {
@@ -649,12 +755,6 @@ $('#boss-form').addEventListener('submit', async (e) => {
   if (await saveBoss()) setMsg('#boss-msg', app.running ? 'บันทึกแล้ว บอทใช้ค่าใหม่ในรอบถัดไป' : 'บันทึกแล้ว', 'ok');
 });
 
-$('#boss-start').addEventListener('click', async () => {
-  if (!bossValues().targets.length) return setMsg('#boss-msg', 'ติ๊กบอสที่จะฟาร์มก่อน', 'bad');
-  if (!(await saveBoss())) return;
-  const res = await api('/api/boss/start', {}).catch(() => null);
-  setMsg('#boss-msg', res?.ok ? 'เริ่มฟาร์มบอสแล้ว' : res?.error || 'เริ่มไม่ได้', res?.ok ? 'ok' : 'bad');
-});
 
 // ---- monsters ---------------------------------------------------------------
 function renderMonsters() {
@@ -735,12 +835,13 @@ function selectTab(tab) {
   try { localStorage.setItem('botlevel99-tab', tab.id); } catch {}
   if (tab.id === 'tab-steps') setTimeout(renderSteps);   // also runs at load, before renderSteps' helpers exist
 }
-tabs.forEach((t, i) => {
+tabs.forEach((t) => {
   t.addEventListener('click', () => selectTab(t));
   t.addEventListener('keydown', (e) => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
-    const next = tabs[(i + step + tabs.length) % tabs.length];
+    const shown = tabs.filter((x) => !x.hidden);      // the other mode's tab is hidden
+    const next = shown[(shown.indexOf(t) + step + shown.length) % shown.length];
     selectTab(next);
     next.focus();
   });

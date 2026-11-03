@@ -49,8 +49,9 @@ class Panel:
         return self.thread is not None and self.thread.is_alive()
 
     # ---- bot control ------------------------------------------------------
-    def start(self, mode='level'):
-        """Start the level bot, or the boss card farm (mode='boss')."""
+    def start(self, mode=None):
+        """Start the mode chosen in the panel ([bot] mode): the level bot, or the boss card farm."""
+        mode = mode or self.bot.cfg['bot'].get('mode', 'level')
         with self.lock:
             if self.running or self.task:
                 return False
@@ -184,6 +185,7 @@ class Panel:
         return {
             'plan': cfg.get('plan', []),
             'settings': {k: cfg['bot'].get(k) for k in SETTINGS},
+            'mode': cfg['bot'].get('mode', 'level'),
             'areas': self.bot.areas,
             'stats': cfg.get('stats', {}),
             'stat_names': STAT_NAMES,
@@ -252,6 +254,19 @@ class Panel:
         self._write_config(text)
         self.bot.stats_due = True           # a running bot applies the new table on its next round
         log(f'บันทึกตารางอัพ Stats ของ {job} แล้ว ({len(clean)} แถว)' if clean else f'ลบตารางอัพ Stats ของ {job} แล้ว')
+        return None
+
+    def save_mode(self, mode):
+        if mode not in ('level', 'boss'):
+            return 'โหมดต้องเป็น level หรือ boss'
+        if self.running or self.task:
+            return 'หยุดบอทก่อนเปลี่ยนโหมด'
+        text = open(CONFIG_PATH, encoding='utf-8').read()
+        text, n = re.subn(r'(?m)^(mode\s*=\s*)[^#\n]*?(\s*(#.*)?)$',
+                          lambda m: f'{m.group(1)}"{mode}"{m.group(2)}', text)
+        if n != 1:
+            return 'หา mode ใน config.toml ไม่เจอ'
+        self._write_config(text)
         return None
 
     def save_boss(self, values):
@@ -384,6 +399,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, {'ok': True} if p.start() else busy)
         if path == '/api/boss/start':
             return self._send(200, {'ok': True} if p.start('boss') else busy)
+        if path == '/api/mode':
+            err = p.save_mode(body.get('mode'))
+            return self._send(200, {'ok': not err, 'error': err})
         if path == '/api/boss':
             err = p.save_boss(body.get('boss', {}))
             return self._send(200, {'ok': not err, 'error': err})
