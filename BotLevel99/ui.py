@@ -34,7 +34,7 @@ SETTINGS = {  # [bot] keys the panel may change: key -> (type, min, max)
     'stall_minutes': (int, 1, 60),
     'dismantle': (bool, None, None),
     'auto_all_after_hunt': (bool, None, None),
-    'press_e_every_s': (int, 0, 60),
+    'press_e_every_s': (float, 0, 10),
 }
 
 
@@ -367,12 +367,14 @@ class Panel:
                 value = 'true' if raw else 'false'
             else:
                 try:
-                    num = int(raw)
+                    num = kind(raw)
                 except (TypeError, ValueError):
                     return f'{key}: ใส่เป็นตัวเลข'
                 if not lo <= num <= hi:
                     return f'{key}: ต้องอยู่ระหว่าง {lo}–{hi}'
-                value = str(num)
+                if kind is float and 0 < num < 0.1:
+                    return f'{key}: ต่ำสุด 0.1 (หรือ 0 = ไม่กด)'
+                value = f'{num:g}'
             text, n = re.subn(rf'(?m)^({key}\s*=\s*)[^#\n]*?(\s*(#.*)?)$',
                               lambda m: f'{m.group(1)}{value}{m.group(2)}', text)
             if n != 1:

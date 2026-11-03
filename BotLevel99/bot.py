@@ -115,15 +115,18 @@ class Bot:
 
     def idle(self, seconds, press_e):
         """wait(), pressing E every press_e_every_s seconds meanwhile when `press_e`: E opens a
-        Hard Worker Box the character stands next to while it farms."""
-        every = self.cfg['bot'].get('press_e_every_s', 1)
-        if not press_e or not every:
+        Hard Worker Box the character stands next to while it farms. It walks past a box in
+        about a second, so E goes several times a second (one press is one ~0.05 s adb call)."""
+        every = float(self.cfg['bot'].get('press_e_every_s', 0.2))
+        if not press_e or every <= 0:
             return self.wait(seconds)
-        note('key', label=f'E ทุก {every} วิ')
-        end = time.time() + seconds
-        while (left := end - time.time()) > 0:
+        note('key', label=f'E ทุก {every:g} วิ')
+        start = time.time()
+        end, n = start + seconds, 0
+        while time.time() < end:
             self.dev.key(KEYS['E'])
-            if self.wait(min(every, left)):
+            n += 1
+            if self.wait(max(0.0, min(start + n * every, end) - time.time())):
                 return True
         return False
 
@@ -339,7 +342,8 @@ class Bot:
         st = self.status
         level = pending = None
         target = None
-        retarget = None                 # (monster, when Hunt was pressed) until Auto is switched off and on
+        retarget = None                 # ((area, monster), when Hunt was pressed) until the hunt is stopped
+        bar_seen_at = 0.0               # last time a monster's HP bar showed (E is pressed only at the farm)
         progress_key, progress_at = None, time.time()
         stalls = hunt_fails = 0
         last_gear, gear_due = 0.0, True
@@ -429,6 +433,7 @@ class Bot:
                         st['target'] = list(want)
                         st['hunts'] += 1
                         retarget = (want, time.time()) if bot.get('auto_all_after_hunt', True) else None
+                        bar_seen_at = 0.0       # the walk there can pass through town
                     else:
                         hunt_fails += 1
                         log(f'กด Hunt ไม่สำเร็จ (ครั้งที่ {hunt_fails}) {save_screen(g.shot(), "hunt-failed")}')
@@ -482,8 +487,11 @@ class Bot:
                     continue
 
                 step('ตีมอนอยู่', want[1])
-                # E only while a monster's HP bar shows (at the farm): in town it could open an NPC
-                self.idle(3 if retarget else bot['check_every_s'], target_hp(img) > 0)
+                # E only at the farm, i.e. a monster's HP bar showed within the last minute (it can
+                # be gone for a moment between kills): in town it could open an NPC
+                if target_hp(img) > 0:
+                    bar_seen_at = now
+                self.idle(3 if retarget else bot['check_every_s'], now - bar_seen_at < 60)
             except DeviceError as e:
                 self.failures += 1
                 log(f'adb มีปัญหา (ครั้งที่ {self.failures}): {e}')
