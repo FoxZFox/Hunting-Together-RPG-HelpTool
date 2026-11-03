@@ -35,7 +35,13 @@ MONSTER_PREV = (61, 171)
 MONSTER_NEXT = (440, 171)
 MONSTER_THUMBS = [(85, 265), (192, 265), (298, 265), (405, 265)]
 MENU_STATUS = (677, 150)                  # menu: Status & Skills
-STATUS_TAB_STATS_WIDE = (736, 39)         # Stats tab when the window opened on Skills (it is wider there)
+STATUS_TAB_STATS_WIDE = (703, 39)         # Stats tab when the window opened on Skills (it is wider there);
+                                          # inside the button whether the window sits left or right (see below)
+# The Stats tab positions below were measured with its "STR" label centred at x=STATS_STR_X.
+# Status & Skills is not always in the same place: on 2026-11-04 it sat 66 px further left
+# than on 2026-11-03 (Roblox's top bar had one icon less), so open_stats() measures the shift
+# and every position below is moved by it (Game.sx).
+STATS_STR_X = 388
 STATS_CLEAR = (658, 152)
 STATS_CONFIRM = (637, 659)
 AUTO_UPGRADE_TOGGLE = (497, 659)          # the game's own "Auto Upgrade Status" switch
@@ -94,7 +100,7 @@ TEMPLATE_REGIONS = {
     'dismantle_done': (330, 95, 300, 65),
     'close_x': (0, 0, 1280, 160),         # red X close buttons, searched at several sizes
     'close_x_status': (0, 0, 1280, 160),
-    'stats_str': (340, 180, 120, 60),     # "STR" label = Status & Skills is on its Stats tab
+    'stats_str': (200, 170, 360, 80),     # "STR" label = Status & Skills is on its Stats tab (x 322 or 388)
     'target_leader': (490, 5, 130, 50),   # orange "Leader" badge before the targeted monster's name
     'target_boss': (490, 5, 130, 50),     # same place, "Boss" (the two score ~0.81 on each other)
     'card_obtained': (530, 70, 220, 65),  # "Obtained!" over a new card; it closes by itself after ~5 s
@@ -307,10 +313,11 @@ def _split_digits(mask, x, w):
     return _split_digits(mask, x, cut) + _split_digits(mask, x + cut, w - cut)
 
 
-def read_stat_value(img, y):
-    """A base stat on the Stats tab, or None. Windows OCR skips a lone digit ("9"), so each
-    digit is matched against templates/digits instead."""
-    x0, x1 = STAT_VALUE_X
+def read_stat_value(img, y, dx=0):
+    """A base stat on the Stats tab, or None (dx: how far the window is from where STAT_VALUE_X
+    was measured). Windows OCR skips a lone digit ("9"), so each digit is matched against
+    templates/digits instead."""
+    x0, x1 = STAT_VALUE_X[0] + dx, STAT_VALUE_X[1] + dx
     crop = cv2.cvtColor(img[y - 22:y + 22, x0:x1], cv2.COLOR_BGR2GRAY)
     mask = (crop < 90).astype(np.uint8)
     _, _, boxes, _ = cv2.connectedComponentsWithStats(mask, 8)
@@ -437,6 +444,7 @@ class Game:
         self.job = None                     # class name read from the Bag, e.g. 'Merchant'
         self.owned = None                   # copies of the card hunt() last opened, from its "Owned" line
         self.stats = None                   # base stats last read from the Stats tab
+        self.stats_dx = 0                   # how far Status & Skills sits from where its positions were measured
         self.img_at = 0.0                   # when self.img was taken (the panel reuses it as its preview)
 
     # ---- basics ---------------------------------------------------------
@@ -744,7 +752,8 @@ class Game:
         """Open Status & Skills on its Stats tab. True when the stat rows show.
 
         The window remembers its last tab; on Skills it is wider and its red X sits where
-        the Adventure Book's does, so screen_state() calls it 'book'.
+        the Adventure Book's does, so screen_state() calls it 'book'. Also measures where
+        the window is (stats_dx): it moves sideways now and then.
         """
         for _ in range(2):
             if not self.to_hud():
@@ -758,19 +767,27 @@ class Game:
                 img = self.shot()
                 if seen(img, 'stats_str'):
                     time.sleep(1.0)         # let it finish sliding in before pressing anything
-                    self.shot()
+                    _, xy = find(self.shot(), 'stats_str')
+                    if xy is None:
+                        continue
+                    self.stats_dx = xy[0] - STATS_STR_X
                     return True
                 if screen_state(img) == 'book':
                     self.tap(STATUS_TAB_STATS_WIDE, 1.2)
                 time.sleep(0.4)
         return False
 
+    def sx(self, xy):
+        """A Stats tab position moved to where the window is now (see STATS_STR_X)."""
+        return xy[0] + self.stats_dx, xy[1]
+
     def read_stats(self, img):
         """({stat: base value}, points left), with None for what could not be read."""
-        values = {s: read_stat_value(img, y) for s, y in zip(STAT_NAMES, STAT_ROW_Y)}
+        values = {s: read_stat_value(img, y, self.stats_dx) for s, y in zip(STAT_NAMES, STAT_ROW_Y)}
         points = None
+        x, y, w, h = POINTS_LEFT_RECT
         for scale, mode in ((3, 'gray'), (2, 'dark'), (2, 'gray')):
-            points = parse_points(self.ocr.text(img, POINTS_LEFT_RECT, scale, mode))
+            points = parse_points(self.ocr.text(img, (x + self.stats_dx, y, w, h), scale, mode))
             if points is not None:
                 break
         return (values if None not in values.values() else None), points
@@ -790,9 +807,10 @@ class Game:
             return False
         try:
             img = self.img
-            b, g, r = (int(c) for c in img[AUTO_UPGRADE_PIXEL[1], AUTO_UPGRADE_PIXEL[0]])
+            px, py = self.sx(AUTO_UPGRADE_PIXEL)
+            b, g, r = (int(c) for c in img[py, px])
             if g - max(b, r) > 50:
-                self.tap(AUTO_UPGRADE_TOGGLE, 1.2)
+                self.tap(self.sx(AUTO_UPGRADE_TOGGLE), 1.2)
                 self.log('ปิด Auto Upgrade Status ของเกม บอทจะอัพ Stats เองตามตาราง')
                 img = self.shot()
             values, points = self.read_stats(img)
@@ -815,7 +833,7 @@ class Game:
             for gap in (0.45, 0.8):
                 for s, y in zip(STAT_NAMES, STAT_ROW_Y):
                     for _ in range(add[s]):
-                        self.tap((STAT_PLUS_X, y), gap)
+                        self.tap(self.sx((STAT_PLUS_X, y)), gap)
                 time.sleep(0.8)
                 _, left = self.read_stats(self.shot())
                 if left == points - spend:
@@ -823,10 +841,10 @@ class Game:
                 again = gap == 0.45
                 self.log(f'กด + แล้วแต้มเหลือ {left} ไม่ตรงกับที่คิดไว้ ({points - spend}) กด Clear'
                          + (' แล้วลองใหม่ช้าลง' if again else f' แล้วไม่อัพ ({self._save("stats-press")})'))
-                self.tap(STATS_CLEAR, 1.2)
+                self.tap(self.sx(STATS_CLEAR), 1.2)
                 if not again:
                     return False
-            self.tap(STATS_CONFIRM, 1.5)
+            self.tap(self.sx(STATS_CONFIRM), 1.5)
             after, _ = self.read_stats(self.shot())
             want = {s: values[s] + add[s] for s in STAT_NAMES}
             self.stats = after or want
