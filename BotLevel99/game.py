@@ -94,6 +94,7 @@ TEMPLATE_REGIONS = {
     'target_leader': (490, 5, 130, 50),   # orange "Leader" badge before the targeted monster's name
     'target_boss': (490, 5, 130, 50),     # same place, "Boss" (the two score ~0.81 on each other)
     'card_obtained': (530, 70, 220, 65),  # "Obtained!" over a new card; it closes by itself after ~5 s
+    'skip_btn': (540, 600, 200, 100),     # "Skip" over the intro camera, shown for ~3 s as soon as a join has loaded
 }
 TEMPLATES = {name: cv2.imread(os.path.join(HERE, 'templates', name + '.png'))
              for name in TEMPLATE_REGIONS}
@@ -113,7 +114,7 @@ STEPS = collections.deque(maxlen=300)
 _ids = itertools.count(1)
 TRACED_TEMPLATES = {'target_boss': 'ป้าย Boss', 'target_leader': 'ป้าย Leader', 'card_obtained': 'Obtained!',
                     'hunt_btn': 'ปุ่ม Hunt', 'stop_btn': 'ปุ่ม Stop', 'stats_str': 'หน้า Stats',
-                    'dismantle_select_all': 'Select All', 'dismantle_done': 'ย่อยเสร็จ'}
+                    'dismantle_select_all': 'Select All', 'dismantle_done': 'ย่อยเสร็จ', 'skip_btn': 'ปุ่ม Skip'}
 
 
 def note(kind, **data):
@@ -453,6 +454,11 @@ class Game:
     def swipe(self, a, b, ms=700):
         note('swipe', a=list(a), b=list(b))
         self.dev.swipe(*a, *b, ms)
+
+    def zoom_out(self, clicks):
+        """Zoom the camera out with the emulator's mouse wheel (more of the room on screen)."""
+        note('key', label=f'ซูมออก ×{clicks}')
+        self.dev.wheel(-clicks)
 
     def wait_state(self, want, timeout=8.0):
         want = (want,) if isinstance(want, str) else want

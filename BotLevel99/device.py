@@ -69,6 +69,26 @@ class Device:
                     break
         return self._keyboard
 
+    def mouse_device(self):
+        """LDPlayer's own virtual mouse inside Android (e.g. /dev/input/event4)."""
+        if not getattr(self, '_mouse', None):
+            self._mouse = '/dev/input/event4'
+            for block in self.shell('getevent -p').split('add device')[1:]:
+                path = re.search(r'(/dev/input/event\d+)', block)
+                name = re.search(r'name:\s*"([^"]*)"', block)
+                if path and name and name.group(1) == 'mouse':
+                    self._mouse = path.group(1)
+                    break
+        return self._mouse
+
+    def wheel(self, clicks):
+        """Turn the wheel of the emulator's virtual mouse (the Windows mouse is not touched).
+        Negative = towards you, which zooms a Roblox camera out."""
+        dev = self.mouse_device()
+        for _ in range(abs(clicks)):
+            self.shell(f'sendevent {dev} 2 8 {-1 if clicks < 0 else 1}; sendevent {dev} 0 0 0')
+            time.sleep(0.2)
+
     def key(self, code):
         """Press and release one key (Linux key code, e.g. 48 = B)."""
         dev = self.keyboard_device()
@@ -122,5 +142,5 @@ class Device:
         # a stuck adb server can outlive the emulator, so start it fresh too
         self._run([self.adb_exe, 'kill-server'], 20)
         time.sleep(3)
-        self._keyboard = None
+        self._keyboard = self._mouse = None
         return self.start_emulator(timeout)

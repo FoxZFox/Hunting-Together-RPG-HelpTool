@@ -25,7 +25,7 @@ import winsound
 import cv2
 
 from device import Device, DeviceError
-from game import Game, app_page, screen_state, similar, step, target_kind
+from game import Game, app_page, find, screen_state, similar, step, target_kind
 from ocr import Ocr
 from servers import Servers
 
@@ -186,32 +186,52 @@ class Bot:
         return self._join(self.cfg['bot']['join_url'])
 
     def _join(self, url):
-        """Open a roblox:// link and wait (up to 3 minutes) until the game's HUD shows."""
+        """Open a roblox:// link and wait (up to 3 minutes) until the game is playable.
+
+        As soon as a join has loaded the game shows a Skip button over its intro camera:
+        pressing it is the earliest sign we are in, and skips the camera swing too. When boss
+        farming the camera is then zoomed out, so a boss's respawn sign stays on screen."""
         step('รอโหลดเข้าเกม')
+        g = self.game
         self.dev.open_url(url)
-        sent = time.time()
+        sent = fixed = time.time()
         end = time.time() + 180
-        img = None
+        img = hud_since = None
         while time.time() < end:
-            if self.wait(5):
+            if self.wait(1):
                 return False
             try:
                 if not self.dev.roblox_in_front():
                     continue
-                img = self.game.shot()
-                if app_page(img) and time.time() - sent > 20:
-                    # a cold start can drop the link and leave Roblox on its own home page
-                    self.dev.open_url(url)
-                    sent = time.time()
+                img = g.shot()
+                if app_page(img):
+                    if time.time() - sent > 20:
+                        # a cold start can drop the link and leave Roblox on its own home page
+                        self.dev.open_url(url)
+                        sent = time.time()
                     continue
+                skip = find(img, 'skip_btn')[1]
+                if skip:
+                    g.tap(skip, 1.0)
+                elif screen_state(img) == 'hud':
+                    # no Skip seen (missed it, or the game stopped showing one): let the intro finish
+                    hud_since = hud_since or time.time()
+                    if time.time() - hud_since < 4:
+                        continue
+                else:
+                    hud_since = None
+                    if time.time() - fixed > 5:     # a Reconnect button or a window over the game
+                        fixed = time.time()
+                        if not self.popup_button(img):
+                            g.close_any()
+                    continue
+                log('เข้าเกมแล้ว')
+                clicks = self.cfg.get('boss', {}).get('zoom_out_clicks', 3)
+                if self.status.get('mode') == 'boss' and clicks:
+                    g.zoom_out(clicks)
+                return True
             except DeviceError:
                 continue
-            if screen_state(img) == 'hud':
-                log('เข้าเกมแล้ว')
-                self.wait(5)
-                return True
-            if not self.popup_button(img):
-                self.game.close_any()
         if img is not None:
             save_screen(img, 'rejoin-failed')
         log('เข้าเกมใหม่ไม่สำเร็จภายใน 3 นาที จะลองอีกรอบ')

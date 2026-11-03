@@ -597,6 +597,7 @@ function fillBoss() {
   form.elements.appear_s.value = cfg.appear_s ?? 6;
   form.elements.wait_respawn_s.value = cfg.wait_respawn_s ?? 0;
   form.elements.after_kill_s.value = cfg.after_kill_s ?? 2;
+  form.elements.zoom_out_clicks.value = cfg.zoom_out_clicks ?? 3;
   form.elements.until_card.checked = cfg.until_card ?? true;
   form.elements.server_pick.value = cfg.server_pick || 'fewest';
   form.elements.server_cooldown_min.value = cfg.server_cooldown_min ?? 12;
@@ -612,6 +613,7 @@ function bossValues() {
     appear_s: Number(form.elements.appear_s.value),
     wait_respawn_s: Number(form.elements.wait_respawn_s.value),
     after_kill_s: Number(form.elements.after_kill_s.value),
+    zoom_out_clicks: Number(form.elements.zoom_out_clicks.value),
     until_card: form.elements.until_card.checked,
     server_pick: form.elements.server_pick.value,
     server_cooldown_min: Number(form.elements.server_cooldown_min.value),
