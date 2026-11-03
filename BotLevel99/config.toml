@@ -1,0 +1,88 @@
+# ===== BotLevel99 =====
+# แผนการตีและค่าใน [bot] แก้ผ่านหน้าควบคุม (run.bat) ได้เลย มีผลทันที
+# ถ้าแก้ไฟล์นี้เอง ต้องปิดหน้าควบคุมแล้วเปิดใหม่
+
+# ----- แผนการตี: เลเวลช่วงไหน ตีตัวอะไร -----
+# monster = ชื่อมอนตามหน้า Adventure Book > Monsters (รายชื่อทั้งหมดอยู่ใน README.md)
+# area    = ไม่ต้องใส่ก็ได้ บอทหาแมพจาก data/monsters.json ให้เอง
+#           ถ้าจะใส่: { from = 1, to = 4, monster = "Wild Rabbit", area = "Rabbit Field" }
+# บอทใช้แถวแรกที่เลเวลตรง
+#
+# แผนเริ่มต้น: ตีมอนธรรมดาที่เลเวลไม่เกินตัวเรา (พอเลเวลถึงตัวที่สูงกว่าในแมพก็เปลี่ยนไปตีตัวนั้น)
+# (plan ต้องอยู่ก่อนหัวข้อ [ldplayer] / [bot] ข้างล่าง)
+plan = [
+  { from = 1,  to = 4,  monster = "Wild Rabbit" },
+  { from = 5,  to = 8,  monster = "Horned Rabbit" },
+  { from = 9,  to = 12, monster = "Wild Boar" },
+  { from = 13, to = 16, monster = "Tusk Boar" },
+  { from = 17, to = 20, monster = "Brown Bear" },
+  { from = 21, to = 25, monster = "Scar Bear" },
+  { from = 26, to = 29, monster = "Spotted Hyena" },
+  { from = 30, to = 33, monster = "Fang Hyena" },
+  { from = 34, to = 37, monster = "Grey Rhino" },
+  { from = 38, to = 41, monster = "Iron Horn Rhino" },
+  { from = 42, to = 45, monster = "Wild Tiger" },
+  { from = 46, to = 50, monster = "Saber Tiger" },
+  { from = 51, to = 54, monster = "Sand Scorpion" },
+  { from = 55, to = 58, monster = "Black Scorpion" },
+  { from = 59, to = 62, monster = "Cliff Ram" },
+  { from = 63, to = 66, monster = "Ironhorn Ram" },
+  { from = 67, to = 70, monster = "Stone Golem" },
+  { from = 71, to = 75, monster = "Spiked Stone Golem" },
+  { from = 76, to = 79, monster = "Polar Bear" },
+  { from = 80, to = 83, monster = "Frost Polar Bear" },
+  { from = 84, to = 87, monster = "Snow Wolf" },
+  { from = 88, to = 91, monster = "Blue-Eyed Wolf" },
+  { from = 92, to = 95, monster = "Ice Golem" },
+  { from = 96, to = 99, monster = "Spiked Ice Golem" },
+]
+
+[bot]
+stop_level = 99          # ถึงเลเวลนี้แล้วหยุดและส่งเสียงเตือน
+check_every_s = 15       # เช็คหน้าจอทุกกี่วินาที
+stall_minutes = 3        # EXP ไม่ขยับนานเท่านี้ = กด Hunt ใหม่ (ค้างครบ 3 รอบติดกัน = เข้าเกมใหม่)
+auto_gear_minutes = 15   # กด Auto Gear + Auto Card ทุกกี่นาที (และทุกครั้งที่เลเวลอัพ)
+dismantle = true         # หลัง Auto Gear/Card ให้ย่อยของที่เหลือ (ค้อน > Select All > Dismantle 2 ครั้ง)
+unknown_timeout_s = 60   # เจอหน้าจอที่ไม่รู้จักนานเท่านี้ = ลองปิด/เข้าเกมใหม่
+restart_after_failures = 3  # LDPlayer ไม่ตอบ/เข้าเกมไม่ได้ติดกันกี่รอบ ถึงจะปิดแล้วเปิด LDPlayer ใหม่
+join_url = "roblox://placeId=117483759937632"
+
+# ----- ฟาร์มการ์ดบอสโลก (แก้ในแท็บฟาร์มบอสของหน้าควบคุมได้) -----
+[boss]
+targets = ["Gorilla King"]  # บอสที่จะฟาร์ม เรียงตามลำดับ
+appear_s = 6                # กด Hunt จากหน้าห้องบอสแล้วกี่วินาทียังไม่เห็นแถบเลือดบอส = ย้ายห้อง
+wait_respawn_s = 0          # บอสจะเกิดภายในกี่วินาที ถึงจะรอในห้องแทนการย้ายห้อง (0 = ย้ายเลย)
+after_kill_s = 2            # บอสตายแล้วรอกี่วินาทีก่อนย้ายห้อง (ระหว่างนั้นดูว่าได้การ์ดไหม)
+until_card = true           # ได้การ์ดของบอสตัวไหนแล้ว ไปตัวถัดไป (false = ฟาร์มตัวแรกไปเรื่อยๆ)
+server_pick = "fewest"      # เลือกห้องแบบไหน: "fewest" คนน้อยสุด, "random" สุ่ม, "most" คนเยอะสุด
+server_cooldown_min = 12    # ห้องที่เข้าไปแล้วจะไม่กลับไปซ้ำภายในกี่นาที (บอสเกิดใหม่ทุก 10 นาที)
+server_skip = [0, 9]        # แบบ "fewest": สุ่มจากห้องคนน้อยสุดอันดับเท่าไหร่ถึงเท่าไหร่ (0-9 = 10 ห้องแรก)
+
+[ldplayer]
+dir = 'C:\LDPlayer\LDPlayer9'
+serial = "emulator-5554"
+index = 0
+
+# ----- ตารางอัพ Stats แยกตามอาชีพ -----
+# แต่ละแถว = ค่า Stats ที่อยากได้เมื่อถึงเลเวลนั้น (ไม่ใส่ stat ไหน = ไม่อัพ stat นั้น)
+# บอทอัพทีละแถวจากบนลงล่าง ในแถวเดียวกันจะเกลี่ยแต้มให้ทุก stat ไปถึงพร้อมกัน
+# อาชีพที่มีตาราง บอทจะปิด Auto Upgrade Status ของเกมแล้วอัพเอง อาชีพที่ไม่มีตาราง บอทไม่ยุ่ง
+# ชื่ออาชีพต้องตรงกับที่เขียนในกระเป๋า (เช่น "Lv.31 Merchant")
+[stats]
+Merchant = [
+  { level = 10, STR = 12, AGI = 6 },
+  { level = 20, STR = 24, AGI = 14 },
+  { level = 30, STR = 36, AGI = 21 },
+  { level = 40, STR = 48, AGI = 29 },
+  { level = 50, STR = 60, AGI = 36 },
+  { level = 60, STR = 72, AGI = 44 },
+  { level = 70, STR = 84, AGI = 51 },
+  { level = 80, STR = 96, AGI = 59 },
+  { level = 90, STR = 99, AGI = 79 },
+  { level = 99, STR = 99, AGI = 97 },
+]
+Thief = [
+  { level = 90, STR = 86, AGI = 76 },
+  { level = 95, STR = 99, AGI = 76 },
+  { level = 99, STR = 99, AGI = 76, LUK = 54 },
+]

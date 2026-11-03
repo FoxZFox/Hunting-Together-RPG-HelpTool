@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+# what the bot did on this PC: its log and screenshots
+BotLevel99/logs/

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BotLevel99</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Mitr:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='6' fill='%23b8692f' stroke='%23172a55' stroke-width='3'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='%23fff3d6'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="4" y="4" width="40" height="40" rx="9" fill="#b8692f" stroke="#172a55" stroke-width="3"/>
+        <rect x="4" y="4" width="8" height="40" rx="3" fill="#8f4c1f"/>
+        <rect x="15" y="12" width="22" height="22" rx="5" fill="#fff3d6" stroke="#172a55" stroke-width="2"/>
+        <rect x="20" y="19" width="3.5" height="4" rx="1" fill="#172a55"/>
+        <rect x="28.5" y="19" width="3.5" height="4" rx="1" fill="#172a55"/>
+        <path d="M21 27 q5 4 10 0" fill="none" stroke="#172a55" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>BotLevel99</h1>
+        <p class="brand-sub">ปั้นคลาสให้ถึง 99 ใน Hunting Together RPG</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="chip" id="run-chip"><span class="chip-dot"></span><span id="run-text">กำลังเชื่อมต่อ</span></span>
+      <button class="btn btn-go btn-big" id="toggle-btn" type="button" disabled>เริ่มบอท</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="window route-window" aria-labelledby="route-title">
+      <div class="window-bar">
+        <h2 id="route-title">เส้นทางสู่ Lv.99</h2>
+        <p class="window-note" id="route-note"></p>
+      </div>
+      <div class="route" id="route" tabindex="0" aria-label="ช่วงเลเวลในแผนการตี"></div>
+    </section>
+
+    <div class="grid">
+      <section class="window now-window" aria-labelledby="now-title">
+        <div class="window-bar"><h2 id="now-title">ตอนนี้</h2></div>
+        <div class="window-body">
+          <div class="now-head">
+            <div class="shield" aria-label="เลเวลปัจจุบัน">
+              <svg viewBox="0 0 120 132" aria-hidden="true">
+                <path d="M60 6 L108 22 V64 C108 96 86 116 60 126 C34 116 12 96 12 64 V22 Z" fill="#ffc533" stroke="#172a55" stroke-width="6" stroke-linejoin="round"/>
+                <path d="M60 18 L97 30 V64 C97 89 80 105 60 113 C40 105 23 89 23 64 V30 Z" fill="#ffdb6e"/>
+              </svg>
+              <span class="shield-lv">Lv.</span>
+              <span class="shield-num" id="level">–</span>
+            </div>
+            <div class="now-target">
+              <p class="label">กำลังตี</p>
+              <p class="target-name" id="target-name">–</p>
+              <p class="target-area" id="target-area"></p>
+              <div class="exp" aria-label="EXP ของเลเวลนี้">
+                <div class="exp-fill" id="exp-fill"></div>
+                <span class="exp-text" id="exp-text">EXP –</span>
+              </div>
+              <p class="next" id="next-step"></p>
+            </div>
+          </div>
+          <dl class="facts">
+            <div><dt>เริ่มที่</dt><dd id="f-start">–</dd></div>
+            <div><dt>ขึ้นมาแล้ว</dt><dd id="f-gained">–</dd></div>
+            <div><dt>รันมา</dt><dd id="f-time">–</dd></div>
+            <div><dt>กด Hunt</dt><dd id="f-hunts">0</dd></div>
+            <div><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
+            <div><dt>เข้าเกมใหม่</dt><dd id="f-rejoins">0</dd></div>
+          </dl>
+          <div class="now-actions">
+            <button class="btn btn-blue" id="gear-btn" type="button">กด Auto Gear และย่อยของ</button>
+            <p class="hint" id="busy-hint">ปุ่มนี้กดได้ตอนบอทหยุดอยู่</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="window screen-window" aria-labelledby="screen-title">
+        <div class="window-bar">
+          <h2 id="screen-title">จอ LDPlayer</h2>
+          <p class="window-note" id="screen-state"></p>
+          <span class="spacer"></span>
+          <label class="check check-small"><input type="checkbox" id="overlay-on" checked> กรอบ</label>
+          <button class="btn btn-ghost btn-small" id="screen-wide" type="button" aria-pressed="false">ขยาย</button>
+        </div>
+        <div class="window-body">
+          <div class="screen">
+            <img id="screen-img" alt="ภาพหน้าจอเกมจาก LDPlayer" width="640" height="360">
+            <svg class="overlay" id="overlay" viewBox="0 0 1280 720" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <p class="screen-step" id="screen-step" hidden></p>
+            <p class="screen-empty" id="screen-empty">ยังดึงภาพจาก LDPlayer ไม่ได้ ตรวจว่าเปิด LDPlayer และเข้าเกมไว้แล้ว</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="window book-window" aria-label="รายละเอียด">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="true">บันทึก</button>
+        <button class="tab" role="tab" id="tab-steps" aria-controls="panel-steps" aria-selected="false">ขั้นตอน</button>
+        <button class="tab" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="false">แผนการตี</button>
+        <button class="tab" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false">ตารางอัพ Stats</button>
+        <button class="tab" role="tab" id="tab-boss" aria-controls="panel-boss" aria-selected="false">ฟาร์มบอส</button>
+        <button class="tab" role="tab" id="tab-monsters" aria-controls="panel-monsters" aria-selected="false">มอนทั้งหมด</button>
+        <button class="tab" role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false">ตั้งค่า</button>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-log" aria-labelledby="tab-log">
+        <ol class="log" id="log" aria-live="polite"></ol>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-steps" aria-labelledby="tab-steps" hidden>
+        <p class="panel-intro">ทุกขั้นตอนที่บอททำและใช้เวลาเท่าไหร่ (ล่าสุดอยู่บน) แถบส้ม = เกิน 10 วินาที แดง = เกิน 20 วินาที ตารางขวาสรุปว่าขั้นตอนไหนกินเวลารวมมากที่สุด เก็บลงไฟล์ logs/steps.log ด้วย</p>
+        <div class="steps-layout">
+          <ol class="steps" id="steps"></ol>
+          <div class="table-wrap">
+            <table class="monsters step-sum">
+              <thead><tr><th>ขั้นตอน</th><th class="num">ครั้ง</th><th class="num">เฉลี่ย</th><th class="num">นานสุด</th><th class="num">รวม</th></tr></thead>
+              <tbody id="step-sum"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-plan" aria-labelledby="tab-plan" hidden>
+        <p class="panel-intro">เลเวลอยู่ในช่วงไหน บอทจะไปตีมอนของแถวนั้น ถ้าช่วงซ้อนกัน แถวที่อยู่บนกว่าจะถูกใช้ก่อน</p>
+        <div class="plan-head" aria-hidden="true"><span>จาก Lv.</span><span>ถึง Lv.</span><span>มอน</span><span></span></div>
+        <ol class="plan" id="plan"></ol>
+        <div class="panel-actions">
+          <button class="btn btn-ghost" id="plan-add" type="button">เพิ่มช่วงเลเวล</button>
+          <span class="spacer"></span>
+          <span class="form-msg" id="plan-msg" role="status"></span>
+          <button class="btn btn-ghost" id="plan-reset" type="button" disabled>ยกเลิกที่แก้</button>
+          <button class="btn btn-go" id="plan-save" type="button" disabled>บันทึกแผน</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
+        <p class="panel-intro">แต่ละแถวคือค่า Stats ที่อยากได้เมื่อถึงเลเวลนั้น บอทจะอัพทุกครั้งที่เลเวลอัพ ทำทีละแถวจากบนลงล่าง และเกลี่ยแต้มให้ทุก stat ในแถวไปถึงเป้าพร้อมกัน ช่องที่เว้นว่างไว้ บอทจะไม่อัพ stat นั้น อาชีพไหนมีตาราง บอทจะปิด Auto Upgrade Status ของเกมให้เอง</p>
+        <div class="panel-actions panel-actions-top">
+          <label class="job-pick">
+            <span class="field-name">อาชีพ</span>
+            <select id="job-select"></select>
+          </label>
+          <label class="job-new">
+            <span class="visually-hidden">ชื่ออาชีพใหม่</span>
+            <input id="job-new" type="text" placeholder="ชื่ออาชีพใหม่ เช่น Cleric" autocomplete="off">
+          </label>
+          <button class="btn btn-ghost" id="job-add" type="button">เพิ่มอาชีพ</button>
+          <span class="spacer"></span>
+          <button class="btn btn-blue" id="stats-run" type="button">อัพ Stats ตอนนี้</button>
+        </div>
+        <div class="stat-now" id="stat-now"></div>
+        <div class="stat-head" aria-hidden="true">
+          <span>ถึง Lv.</span><span data-stat="STR">STR</span><span data-stat="AGI">AGI</span><span data-stat="VIT">VIT</span><span data-stat="INT">INT</span><span data-stat="DEX">DEX</span><span data-stat="LUK">LUK</span><span></span>
+        </div>
+        <ol class="stat-table" id="stat-table"></ol>
+        <div class="panel-actions">
+          <button class="btn btn-ghost" id="stat-add" type="button">เพิ่มแถว</button>
+          <span class="spacer"></span>
+          <span class="form-msg" id="stat-msg" role="status"></span>
+          <button class="btn btn-ghost" id="stat-reset" type="button" disabled>ยกเลิกที่แก้</button>
+          <button class="btn btn-go" id="stat-save" type="button" disabled>บันทึกตาราง</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-boss" aria-labelledby="tab-boss" hidden>
+        <p class="panel-intro">บอทกด Hunt ที่การ์ดบอส ถ้าบอสอยู่ก็ตีจนตายแล้วดูว่าได้การ์ดไหม ถ้าไม่เห็นแถบเลือดบอสก็ย้ายไปห้องที่คนน้อยที่สุดซึ่งยังไม่ได้ไปใน 15 นาที (ออกด้วยปุ่ม Leave ของ Roblox ให้เกมเซฟก่อน) ทำทีละตัวตามลำดับที่ติ๊กไว้</p>
+        <form class="boss-form" id="boss-form">
+          <fieldset class="boss-pick">
+            <legend class="field-name">บอสที่จะฟาร์ม</legend>
+            <div class="boss-list" id="boss-list"></div>
+          </fieldset>
+          <div class="boss-settings">
+            <label class="field">
+              <span class="field-name">กด Hunt แล้วกี่วินาทีไม่เห็นแถบเลือดบอส ถึงย้ายห้อง</span>
+              <input type="number" name="appear_s" min="2" max="60" required>
+              <span class="field-help">นับตอนเริ่มจากหน้าห้องบอส ถ้าเดินมาจากที่อื่นจะรอนานกว่านี้</span>
+            </label>
+            <label class="field">
+              <span class="field-name">บอสตายแล้วรอกี่วินาทีก่อนย้ายห้อง</span>
+              <input type="number" name="after_kill_s" min="0" max="30" required>
+              <span class="field-help">ระหว่างรอจะดูว่ามีหน้าต่าง Obtained! ขึ้นไหม ถ้าพลาด บอทก็ยังรู้จากช่อง Owned ของการ์ดตอนกด Hunt รอบถัดไป</span>
+            </label>
+            <label class="field">
+              <span class="field-name">บอสจะเกิดภายในกี่วินาที ถึงรอในห้อง</span>
+              <input type="number" name="wait_respawn_s" min="0" max="600" required>
+              <span class="field-help">0 = เห็นบอสตายอยู่ก็ย้ายห้องเลย</span>
+            </label>
+            <label class="field">
+              <span class="field-name">เลือกห้องแบบไหน</span>
+              <select name="server_pick">
+                <option value="fewest">คนน้อยที่สุด</option>
+                <option value="random">สุ่ม (แบบ Quick Join)</option>
+                <option value="most">คนเยอะที่สุด</option>
+              </select>
+            </label>
+            <div class="field">
+              <span class="field-name">แบบคนน้อยที่สุด: สุ่มจากห้องอันดับที่ (เรียงจากคนน้อยไปมาก)</span>
+              <span class="skip-range">
+                <input type="number" name="skip_min" min="1" max="101" aria-label="ตั้งแต่อันดับ" required>
+                <span>–</span>
+                <input type="number" name="skip_max" min="1" max="101" aria-label="ถึงอันดับ" required>
+              </span>
+              <span class="field-help">1–10 = สุ่มจาก 10 ห้องที่คนน้อยที่สุด</span>
+            </div>
+            <label class="field">
+              <span class="field-name">ห้องที่เข้าไปแล้ว ไม่กลับไปซ้ำภายในกี่นาที</span>
+              <input type="number" name="server_cooldown_min" min="1" max="60" required>
+              <span class="field-help">บอสเกิดใหม่ทุก 10 นาที</span>
+            </label>
+            <label class="field field-toggle">
+              <input type="checkbox" name="until_card" class="toggle">
+              <span>
+                <span class="field-name">ได้การ์ดแล้วไปตัวถัดไป</span>
+                <span class="field-help">ปิดไว้ = ฟาร์มตัวแรกในรายการไปเรื่อยๆ</span>
+              </span>
+            </label>
+          </div>
+          <div class="panel-actions">
+            <dl class="boss-facts">
+              <div><dt>ฆ่าบอส</dt><dd id="b-kills">0</dd></div>
+              <div><dt>ย้ายห้อง</dt><dd id="b-hops">0</dd></div>
+              <div><dt>การ์ดที่ได้</dt><dd id="b-cards">0</dd></div>
+            </dl>
+            <span class="spacer"></span>
+            <span class="form-msg" id="boss-msg" role="status"></span>
+            <button class="btn btn-ghost" type="submit">บันทึก</button>
+            <button class="btn btn-go" id="boss-start" type="button">เริ่มฟาร์มบอส</button>
+          </div>
+        </form>
+        <ol class="card-log" id="card-log"></ol>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-monsters" aria-labelledby="tab-monsters" hidden>
+        <div class="panel-actions panel-actions-top">
+          <label class="search">
+            <span class="visually-hidden">ค้นหามอนหรือแมพ</span>
+            <input id="monster-search" type="search" placeholder="ค้นหามอนหรือแมพ">
+          </label>
+          <label class="check"><input type="checkbox" id="only-normal"> เฉพาะมอนธรรมดา</label>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost" id="scan-btn" type="button">สแกนข้อมูลมอนใหม่</button>
+        </div>
+        <div class="table-wrap">
+          <table class="monsters">
+            <thead>
+              <tr><th>มอน</th><th>แมพ</th><th class="num">Lv</th><th class="num">HP</th><th class="num">EXP</th><th class="num">EXP ต่อ HP</th><th>ประเภท</th><th></th></tr>
+            </thead>
+            <tbody id="monsters"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" hidden>
+        <form class="settings" id="settings">
+          <label class="field">
+            <span class="field-name">หยุดเมื่อถึงเลเวล</span>
+            <input type="number" name="stop_level" min="1" max="200" required>
+          </label>
+          <label class="field">
+            <span class="field-name">กด Auto Gear ทุกกี่นาที</span>
+            <input type="number" name="auto_gear_minutes" min="1" max="240" required>
+            <span class="field-help">และทุกครั้งที่เลเวลอัพ</span>
+          </label>
+          <label class="field">
+            <span class="field-name">EXP ไม่ขยับกี่นาทีถึงกด Hunt ใหม่</span>
+            <input type="number" name="stall_minutes" min="1" max="60" required>
+            <span class="field-help">ค้างครบ 3 รอบติดกันจะเข้าเกมใหม่</span>
+          </label>
+          <label class="field field-toggle">
+            <input type="checkbox" name="dismantle" class="toggle">
+            <span>
+              <span class="field-name">ย่อยของหลัง Auto Gear</span>
+              <span class="field-help">ค้อน แล้ว Select All แล้วกด Dismantle 2 ครั้ง ของที่ใส่อยู่ไม่ถูกย่อย</span>
+            </span>
+          </label>
+          <div class="panel-actions">
+            <span class="spacer"></span>
+            <span class="form-msg" id="settings-msg" role="status"></span>
+            <button class="btn btn-go" type="submit">บันทึกการตั้งค่า</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

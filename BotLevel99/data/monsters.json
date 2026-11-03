@@ -1,0 +1,860 @@
+{
+ "scanned": "2026-11-03T01:27:13",
+ "areas": [
+  {
+   "name": "Rabbit Field",
+   "min": 1,
+   "max": 8,
+   "monsters": [
+    {
+     "name": "Wild Rabbit",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 1,
+     "hp": 68,
+     "atk": 3,
+     "exp": 8
+    },
+    {
+     "name": "Horned Rabbit",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 5,
+     "hp": 143,
+     "atk": null,
+     "exp": 21
+    },
+    {
+     "name": "Rabbit King",
+     "kind": "Mini-Boss",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 8,
+     "hp": 1470,
+     "atk": 10,
+     "exp": 294
+    },
+    {
+     "name": "Leader Horned Rabbit",
+     "kind": "Leader",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 8,
+     "hp": 470,
+     "atk": 13,
+     "exp": 117
+    }
+   ]
+  },
+  {
+   "name": "Boar Forest",
+   "min": 9,
+   "max": 16,
+   "monsters": [
+    {
+     "name": "Wild Boar",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 9,
+     "hp": 210,
+     "atk": 15,
+     "exp": 38
+    },
+    {
+     "name": "Tusk Boar",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 13,
+     "hp": 278,
+     "atk": 22,
+     "exp": 70
+    },
+    {
+     "name": "Leader Tusk Boar",
+     "kind": "Leader",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 15,
+     "hp": 1092,
+     "atk": 42,
+     "exp": 434
+    },
+    {
+     "name": "Boar King",
+     "kind": "Mini-Boss",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 16,
+     "hp": 3413,
+     "atk": 34,
+     "exp": 1085
+    }
+   ]
+  },
+  {
+   "name": "Bear Forest",
+   "min": 17,
+   "max": 25,
+   "monsters": [
+    {
+     "name": "Brown Bear",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 17,
+     "hp": 581,
+     "atk": 31,
+     "exp": 115
+    },
+    {
+     "name": "Scar Bear",
+     "kind": "Normal",
+     "element": "Earth",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 21,
+     "hp": 735,
+     "atk": 40,
+     "exp": 171
+    },
+    {
+     "name": "Leader Scar Bear",
+     "kind": "Leader",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 24,
+     "hp": 2960,
+     "atk": 79,
+     "exp": 1148
+    },
+    {
+     "name": "Bear King",
+     "kind": "Mini-Boss",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 25,
+     "hp": 9251,
+     "atk": 63,
+     "exp": 2870
+    }
+   ]
+  },
+  {
+   "name": "Boss Room • Gorilla King",
+   "min": 25,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Gorilla King",
+     "kind": "Boss",
+     "element": "Earth",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 25,
+     "hp": 32614,
+     "atk": 68,
+     "exp": 7174
+    }
+   ]
+  },
+  {
+   "name": "Hyena Den",
+   "min": 26,
+   "max": 33,
+   "monsters": [
+    {
+     "name": "Spotted Hyena",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 26,
+     "hp": 1006,
+     "atk": 52,
+     "exp": 280
+    },
+    {
+     "name": "Fang Hyena",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 30,
+     "hp": 1160,
+     "atk": 63,
+     "exp": 413
+    },
+    {
+     "name": "Leader Fang Hyena",
+     "kind": "Leader",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 32,
+     "hp": 4906,
+     "atk": 129,
+     "exp": 2772
+    },
+    {
+     "name": "Hyena King",
+     "kind": "Mini-Boss",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 33,
+     "hp": 15332,
+     "atk": 129,
+     "exp": 6930
+    }
+   ]
+  },
+  {
+   "name": "Rhino Thicket",
+   "min": 34,
+   "max": 41,
+   "monsters": [
+    {
+     "name": "Grey Rhino",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 34,
+     "hp": 1454,
+     "atk": 75,
+     "exp": 609
+    },
+    {
+     "name": "Iron Horn Rhino",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 38,
+     "hp": 1680,
+     "atk": 90,
+     "exp": 885
+    },
+    {
+     "name": "Leader Iron Horn Rhino",
+     "kind": "Leader",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 40,
+     "hp": 7180,
+     "atk": 200,
+     "exp": 5978
+    },
+    {
+     "name": "Rhino King",
+     "kind": "Mini-Boss",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 41,
+     "hp": 22441,
+     "atk": 200,
+     "exp": 14944
+    }
+   ]
+  },
+  {
+   "name": "Tiger Thicket",
+   "min": 42,
+   "max": 50,
+   "monsters": [
+    {
+     "name": "Wild Tiger",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 42,
+     "hp": 2057,
+     "atk": 109,
+     "exp": 1239
+    },
+    {
+     "name": "Saber Tiger",
+     "kind": "Normal",
+     "element": "Wind",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 46,
+     "hp": 2373,
+     "atk": 129,
+     "exp": 1617
+    },
+    {
+     "name": "Leader Saber Tiger",
+     "kind": "Leader",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 49,
+     "hp": 10158,
+     "atk": 264,
+     "exp": 11424
+    },
+    {
+     "name": "Tiger King",
+     "kind": "Mini-Boss",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 50,
+     "hp": 31746,
+     "atk": 264,
+     "exp": 28560
+    }
+   ]
+  },
+  {
+   "name": "Boss Room • Whitefang Sabertooth",
+   "min": 50,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Whitefang Sabertooth",
+     "kind": "Boss",
+     "element": "Wind",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 50,
+     "hp": 132884,
+     "atk": 286,
+     "exp": 71400
+    }
+   ]
+  },
+  {
+   "name": "Scorpion Dunes",
+   "min": 51,
+   "max": 58,
+   "monsters": [
+    {
+     "name": "Sand Scorpion",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 51,
+     "hp": 3046,
+     "atk": 150,
+     "exp": 2065
+    },
+    {
+     "name": "Black Scorpion",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 55,
+     "hp": 3514,
+     "atk": 173,
+     "exp": 2380
+    },
+    {
+     "name": "Leader Black Scorpion",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 57,
+     "hp": 21579,
+     "atk": 431,
+     "exp": 17780
+    },
+    {
+     "name": "Scorpion King",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 58,
+     "hp": 67441,
+     "atk": 431,
+     "exp": 44450
+    }
+   ]
+  },
+  {
+   "name": "Ram Cliffs",
+   "min": 59,
+   "max": 66,
+   "monsters": [
+    {
+     "name": "Cliff Ram",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 59,
+     "hp": 4328,
+     "atk": 203,
+     "exp": 2660
+    },
+    {
+     "name": "Ironhorn Ram",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 63,
+     "hp": 4948,
+     "atk": 231,
+     "exp": 2975
+    },
+    {
+     "name": "Leader Ironhorn Ram",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 65,
+     "hp": 30709,
+     "atk": 587,
+     "exp": 22540
+    },
+    {
+     "name": "Ram King",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 66,
+     "hp": 95963,
+     "atk": 587,
+     "exp": 56350
+    }
+   ]
+  },
+  {
+   "name": "Stone Golem Valley",
+   "min": 67,
+   "max": 75,
+   "monsters": [
+    {
+     "name": "Stone Golem",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 67,
+     "hp": 6006,
+     "atk": 255,
+     "exp": 3360
+    },
+    {
+     "name": "Spiked Stone Golem",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 71,
+     "hp": 6637,
+     "atk": 286,
+     "exp": 3919
+    },
+    {
+     "name": "Leader Spiked Stone Golem",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 74,
+     "hp": 42290,
+     "atk": 767,
+     "exp": 29119
+    },
+    {
+     "name": "Stone Golem King",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 75,
+     "hp": 132158,
+     "atk": 767,
+     "exp": 72800
+    }
+   ]
+  },
+  {
+   "name": "Boss Room • Obsidian Pharaoh",
+   "min": 75,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Obsidian Pharaoh",
+     "kind": "Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 75,
+     "hp": 334152,
+     "atk": 658,
+     "exp": 182000
+    }
+   ]
+  },
+  {
+   "name": "Polar Bear Plain",
+   "min": 76,
+   "max": 83,
+   "monsters": [
+    {
+     "name": "Polar Bear",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 76,
+     "hp": 7828,
+     "atk": 336,
+     "exp": 5005
+    },
+    {
+     "name": "Frost Polar Bear",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 80,
+     "hp": 8284,
+     "atk": 374,
+     "exp": 6160
+    },
+    {
+     "name": "Leader Frost Polar Bear",
+     "kind": "Leader",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 82,
+     "hp": 54096,
+     "atk": 931,
+     "exp": 44660
+    },
+    {
+     "name": "Polar Bear King",
+     "kind": "Mini-Boss",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 83,
+     "hp": 169055,
+     "atk": 931,
+     "exp": 111650
+    }
+   ]
+  },
+  {
+   "name": "Snow Wolf Forest",
+   "min": 84,
+   "max": 91,
+   "monsters": [
+    {
+     "name": "Snow Wolf",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 84,
+     "hp": 9136,
+     "atk": 406,
+     "exp": 7594
+    },
+    {
+     "name": "Blue-Eyed Wolf",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 88,
+     "hp": 9284,
+     "atk": 439,
+     "exp": 9275
+    },
+    {
+     "name": "Leader Blue-Eyed Wolf",
+     "kind": "Leader",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 90,
+     "hp": 62438,
+     "atk": 1224,
+     "exp": 67480
+    },
+    {
+     "name": "Wolf King",
+     "kind": "Mini-Boss",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 91,
+     "hp": 195122,
+     "atk": 1224,
+     "exp": 168700
+    }
+   ]
+  },
+  {
+   "name": "Ice Golem Peak",
+   "min": 92,
+   "max": 99,
+   "monsters": [
+    {
+     "name": "Ice Golem",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 92,
+     "hp": 9980,
+     "atk": 473,
+     "exp": 11095
+    },
+    {
+     "name": "Spiked Ice Golem",
+     "kind": "Normal",
+     "element": "Water",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 96,
+     "hp": 10136,
+     "atk": 510,
+     "exp": 13055
+    },
+    {
+     "name": "Leader Spiked Ice Golem",
+     "kind": "Leader",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 98,
+     "hp": 68566,
+     "atk": 1270,
+     "exp": 96600
+    },
+    {
+     "name": "Ice Golem King",
+     "kind": "Mini-Boss",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 214275,
+     "atk": 1270,
+     "exp": 241499
+    }
+   ]
+  },
+  {
+   "name": "Boss Room • Tempest Dragon King",
+   "min": 99,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Tempest Dragon King",
+     "kind": "Boss",
+     "element": "Water",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 477520,
+     "atk": 1084,
+     "exp": 603750
+    }
+   ]
+  },
+  {
+   "name": "Lava Turtle Hill",
+   "min": 99,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Great Lava Turtle",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 240031,
+     "atk": 1397,
+     "exp": 265650
+    },
+    {
+     "name": "Volcanic Demon Turtle",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 11121,
+     "atk": 520,
+     "exp": 12204
+    },
+    {
+     "name": "Leader Magma Spike Turtle",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 76807,
+     "atk": 1397,
+     "exp": 106260
+    },
+    {
+     "name": "Magma Spike Turtle",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 11295,
+     "atk": 561,
+     "exp": 14360
+    }
+   ]
+  },
+  {
+   "name": "Fire Bat Cliffs",
+   "min": 99,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Blaze Bat",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 12611,
+     "atk": 617,
+     "exp": 15796
+    },
+    {
+     "name": "Fire Bat Lord",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 269326,
+     "atk": 1537,
+     "exp": 292215
+    },
+    {
+     "name": "Fire Bat",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 12416,
+     "atk": 572,
+     "exp": 13425
+    },
+    {
+     "name": "Leader Blaze Bat",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 86181,
+     "atk": 1537,
+     "exp": 116885
+    }
+   ]
+  },
+  {
+   "name": "Hellhound Ash Fields",
+   "min": 99,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Obsidian Hellhound",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 9,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 14077,
+     "atk": 679,
+     "exp": 17376
+    },
+    {
+     "name": "Hellhound Alpha",
+     "kind": "Mini-Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 302661,
+     "atk": 1690,
+     "exp": 321436
+    },
+    {
+     "name": "Ash Hellhound",
+     "kind": "Normal",
+     "element": "Fire",
+     "spawned": 10,
+     "respawn_s": 5,
+     "level": 99,
+     "hp": 13860,
+     "atk": 630,
+     "exp": 14767
+    },
+    {
+     "name": "Leader Obsidian Hellhound",
+     "kind": "Leader",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": 96849,
+     "atk": 1690,
+     "exp": 128574
+    }
+   ]
+  },
+  {
+   "name": "Boss Arena • Volcano Turtle King",
+   "min": 99,
+   "max": null,
+   "monsters": [
+    {
+     "name": "Volcano Turtle King",
+     "kind": "Boss",
+     "element": "Fire",
+     "spawned": 1,
+     "respawn_s": null,
+     "level": 99,
+     "hp": null,
+     "atk": 1788,
+     "exp": 664125
+    }
+   ]
+  }
+ ]
+}
