@@ -667,6 +667,7 @@ function fillBoss() {
   form.elements.until_card.checked = cfg.until_card ?? true;
   form.elements.follow_timers.checked = cfg.follow_timers ?? true;
   form.elements.timed_wait_s.value = cfg.timed_wait_s ?? 40;
+  form.elements.server_min_players.value = cfg.server_min_players ?? 6;
   form.elements.server_pick.value = cfg.server_pick || 'fewest';
   form.elements.server_cooldown_min.value = cfg.server_cooldown_min ?? 12;
   const skip = cfg.server_skip || [0, 9];         // stored 0-based, shown as ranks from 1
@@ -685,6 +686,7 @@ function bossValues() {
     until_card: form.elements.until_card.checked,
     follow_timers: form.elements.follow_timers.checked,
     timed_wait_s: Number(form.elements.timed_wait_s.value),
+    server_min_players: Number(form.elements.server_min_players.value),
     server_pick: form.elements.server_pick.value,
     server_cooldown_min: Number(form.elements.server_cooldown_min.value),
     server_skip: [Number(form.elements.skip_min.value) - 1, Number(form.elements.skip_max.value) - 1],

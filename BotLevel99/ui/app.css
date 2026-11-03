@@ -396,7 +396,7 @@ body.screen-wide .screen-window { order: -1; }
 .boss-option:has(input:checked) { background: #fff7d6; box-shadow: inset 6px 0 0 var(--halt); }
 .boss-settings { display: grid; gap: 14px; align-content: start; }
 .skip-range { display: flex; align-items: center; gap: 6px; }
-.skip-range input { width: 70px; }
+.skip-range input { width: 70px; flex: none; }
 .boss-facts { display: flex; gap: 22px; margin: 0; }
 .boss-facts dt { font-size: 13px; color: var(--ink-soft); }
 .boss-facts dd { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 600; }

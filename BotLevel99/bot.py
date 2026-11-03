@@ -191,6 +191,8 @@ class Bot:
         try:
             cfg = self.cfg.get('boss', {})
             if self.servers:
+                self.servers.cooldown = cfg.get('server_cooldown_min', 12) * 60
+                self.servers.min_players = cfg.get('server_min_players', 6)
                 due = self.servers.due(boss) if boss and cfg.get('follow_timers', True) else None
                 if due:
                     server, self.timed = due
@@ -198,9 +200,11 @@ class Bot:
                     log(f'ไปห้องที่จำเวลาไว้: {boss} จะเกิดในอีก {self.timed:.0f} วิ '
                         f'(ย้ายห้องใช้ประมาณ {self.servers.travel:.0f} วิ)')
                 else:
-                    self.servers.cooldown = cfg.get('server_cooldown_min', 12) * 60
                     skip = cfg.get('server_skip', [0, 9])
                     server = self.servers.pick(cfg.get('server_pick', 'fewest'), (min(skip), max(skip)))
+                    if server and server.get('playing', 0) < self.servers.min_players:
+                        log(f'ห้องที่มีคน {self.servers.min_players}+ เข้าไปครบหมดแล้ว (ติดคูลดาวน์) '
+                            f'เลยเข้าห้องที่คนเยอะสุดในที่เหลือแทน')
         except (OSError, ValueError) as e:
             log(f'ดึงรายชื่อห้องไม่ได้ ({e}) เข้าห้องสุ่มแทน')
         if server:

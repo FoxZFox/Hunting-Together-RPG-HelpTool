@@ -223,6 +223,11 @@
               <span class="field-help">0 = เห็นบอสตายอยู่ก็ย้ายห้องเลย</span>
             </label>
             <label class="field">
+              <span class="field-name">เข้าเฉพาะห้องที่มีคนตั้งแต่กี่คน</span>
+              <input type="number" name="server_min_players" min="0" max="12" required>
+              <span class="field-help">ห้อง 2–5 คนส่วนใหญ่มีคนเฝ้าบอส บางห้องใช้ Exploit · 0 = ไม่จำกัด · ถ้าห้องที่ถึงขั้นต่ำติดคูลดาวน์หมด จะเข้าห้องที่คนเยอะสุดในที่เหลือ</span>
+            </label>
+            <label class="field">
               <span class="field-name">เลือกห้องแบบไหน</span>
               <select name="server_pick">
                 <option value="fewest">คนน้อยที่สุด</option>
@@ -231,7 +236,7 @@
               </select>
             </label>
             <div class="field">
-              <span class="field-name">แบบคนน้อยที่สุด: สุ่มจากห้องอันดับที่ (เรียงจากคนน้อยไปมาก)</span>
+              <span class="field-name">แบบคนน้อยที่สุด: สุ่มจากห้องอันดับที่ (เรียงจากคนน้อยไปมาก นับเฉพาะห้องที่ถึงขั้นต่ำ)</span>
               <span class="skip-range">
                 <input type="number" name="skip_min" min="1" max="101" aria-label="ตั้งแต่อันดับ" required>
                 <span>–</span>

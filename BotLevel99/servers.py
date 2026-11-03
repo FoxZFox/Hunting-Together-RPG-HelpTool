@@ -14,6 +14,10 @@ import urllib.error
 import urllib.request
 
 API = 'https://games.roblox.com/v1/games/{place}/servers/Public?sortOrder=Asc&excludeFullGames=true&limit=100'
+PAGE_S = 22.5       # the list answers 429 past ~3 requests a minute: a list is used 22.5 s per page it cost
+MAX_PAGES = 6
+WANTED = 30         # joinable servers (see joinable) worth having to pick from
+STALE_S = 300       # while Roblox refuses (429), a list this old still beats a random server
 
 
 class Servers:
@@ -21,46 +25,78 @@ class Servers:
         self.place = place_id
         self.cooldown = cooldown_s
         self.pages = pages
+        self.min_players = 0            # servers with fewer players are only a fallback
         self.visited = {}               # server id -> when we went there
-        self.cache = (0.0, [])          # (time, servers): the API answers 429 when asked too often
+        self.cache = (0.0, [], 0, None)  # (when read, servers, pages it cost, cursor of the next page)
+        self.retry_at = 0.0             # after a refusal, ask again no sooner than this
         self.current = None             # the server we are in, when we picked it
         self.respawn = {}               # (server id, boss) -> when that boss respawns (epoch seconds)
         self.travel = 30.0              # seconds from leaving a server to watching the boss in the next
 
+    def _page(self, cursor=None):
+        url = API.format(place=self.place) + (f'&cursor={cursor}' if cursor else '')
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        for wait in (5, 15, None):
+            try:
+                return json.load(urllib.request.urlopen(req, timeout=15))
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or wait is None:
+                    self.retry_at = time.time() + 30
+                    raise
+                time.sleep(wait)
+
+    def joinable(self, servers, busy=True):
+        """Servers we could go to now: a free slot or two (so the join does not race someone
+        else into a full server), not visited within the cooldown, and with min_players or
+        more when `busy`."""
+        now = time.time()
+        return [s for s in servers
+                if s.get('playing', 0) <= s.get('maxPlayers', 0) - 2
+                and now - self.visited.get(s['id'], 0) > self.cooldown
+                and (not busy or s.get('playing', 0) >= self.min_players)]
+
     def fetch(self):
-        if time.time() - self.cache[0] < 45:
-            return self.cache[1]
-        servers, cursor = [], None
-        for _ in range(self.pages):
-            url = API.format(place=self.place) + (f'&cursor={cursor}' if cursor else '')
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            for wait in (5, 15, None):
-                try:
-                    data = json.load(urllib.request.urlopen(req, timeout=15))
-                    break
-                except urllib.error.HTTPError as e:
-                    if e.code != 429 or wait is None:
-                        raise
-                    time.sleep(wait)
-            servers += data.get('data', [])
-            cursor = data.get('nextPageCursor')
-            if not cursor:
-                break
-        self.cache = (time.time(), servers)
+        """Public servers from the emptiest up: `pages` pages, then one more at a time (up to
+        MAX_PAGES) while fewer than WANTED are joinable. On 2026-11-04 the first 100 had 2-4
+        players, the next 100 4-7 and the next 7-10 (13 a server)."""
+        at, servers, cost, cursor = self.cache
+        now = time.time()
+        if now - at >= cost * PAGE_S:                   # too old: read it again from the top
+            try:
+                if now < self.retry_at:
+                    raise OSError('Roblox refused the server list a moment ago')
+                data = self._page()
+            except OSError:
+                if servers and now - at < STALE_S:
+                    return servers
+                raise
+            at, servers, cost, cursor = time.time(), data.get('data', []), 1, data.get('nextPageCursor')
+        while (cursor and cost < MAX_PAGES and time.time() >= self.retry_at
+               and (cost < self.pages or len(self.joinable(servers)) < WANTED)):
+            try:
+                data = self._page(cursor)
+            except OSError:
+                break                                   # make do with what we have
+            servers = servers + data.get('data', [])
+            cost, cursor = cost + 1, data.get('nextPageCursor')
+        self.cache = (at, servers, max(cost, 2), cursor)
         return servers
 
     def pick(self, strategy='fewest', skip=(0, 0)):
         """The server to go to next, or None: one of the emptiest ('fewest'), the busiest ('most')
-        or any ('random', like Roblox's own Quick Join). Leaves a free slot or two so the join does
-        not race someone else into a full server.
+        or any ('random', like Roblox's own Quick Join) of the joinable ones. skip=(0, 9) picks
+        at random among the 10 emptiest.
 
-        skip=(10, 20) passes over a random 10-20 of the very emptiest first: other people hopping
-        for bosses go straight for those, so their bosses are usually already dead.
+        Servers with 2-5 players are mostly boss campers, some exploiting, whose bosses are
+        always dead; at 6+ players the user found people running bots and no campers. When
+        every server with min_players has been visited lately, the busiest of the rest come
+        closest.
         """
         now = time.time()
-        fresh = [s for s in self.fetch()
-                 if s.get('playing', 0) <= s.get('maxPlayers', 0) - 2
-                 and now - self.visited.get(s['id'], 0) > self.cooldown]
+        servers = self.fetch()
+        fresh = self.joinable(servers)
+        if not fresh:
+            fresh = sorted(self.joinable(servers, busy=False), key=lambda s: -s.get('playing', 0))[:10]
         if not fresh:
             return None
         if strategy == 'random':
