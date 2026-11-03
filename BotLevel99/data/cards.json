@@ -1,0 +1,96 @@
+{
+ "read": "2026-11-04, Adventure Book > Card Book, checked by eye from the game's own panels",
+ "notes": [
+  "owned = copies this account had on that day",
+  "Mini-Boss and Boss cards: 1 copy only (one can be equipped)",
+  "set bonus: step1 and step2 as the game shows them; boss maps have none",
+  "crits deal x1.4 damage (How to Play > LUK = More Crits)"
+ ],
+ "areas": [
+  {"area": "Rabbit Field", "set": {"have": "2/4", "step1": "AGI +1, HP +25", "step2": "AGI +1, HP +25"}, "cards": [
+   {"monster": "Wild Rabbit", "type": "General", "owned": 2, "stats": "HP +40"},
+   {"monster": "Horned Rabbit", "type": "General", "owned": 0, "stats": "MATK +5"},
+   {"monster": "Rabbit King", "type": "Mini-Boss", "owned": 1, "stats": "Evasion +5, AGI +3", "ability": "3% chance to stun on hit", "class_boost": "Thief: Double Hit chance +5%"},
+   {"monster": "Leader Horned Rabbit", "type": "Leader", "owned": 0, "stats": "MATK +8"}]},
+  {"area": "Boar Forest", "set": {"have": "2/4", "step1": "DEF +1, VIT +1", "step2": "DEF +2, VIT +1"}, "cards": [
+   {"monster": "Wild Boar", "type": "General", "owned": 2, "stats": "DEX +1"},
+   {"monster": "Tusk Boar", "type": "General", "owned": 1, "stats": "DEF +4"},
+   {"monster": "Leader Tusk Boar", "type": "Leader", "owned": 0, "stats": "DEF +6"},
+   {"monster": "Boar King", "type": "Mini-Boss", "owned": 0, "stats": "VIT +4", "ability": "Lifesteal 1% of damage", "class_boost": "Swordsman: Crushing Blow damage +10%"}]},
+  {"area": "Bear Forest", "set": {"have": "2/4", "step1": "HP +50, STR +1", "step2": "HP +50, STR +1"}, "cards": [
+   {"monster": "Brown Bear", "type": "General", "owned": 1, "stats": "AGI +2"},
+   {"monster": "Scar Bear", "type": "General", "owned": 1, "stats": "INT +2"},
+   {"monster": "Leader Scar Bear", "type": "Leader", "owned": 0, "stats": "INT +3"},
+   {"monster": "Bear King", "type": "Mini-Boss", "owned": 0, "stats": "STR +4", "ability": "Lifesteal 1% of damage", "class_boost": "Merchant: Coin Smash damage +10%"}]},
+  {"area": "Boss Room • Gorilla King", "set": null, "cards": [
+   {"monster": "Gorilla King", "type": "Boss", "owned": 0, "stats": "ATK +12, MATK +12, STR +5, VIT +5", "ability": "Max HP +6%, DMG Reduction 5%"}]},
+  {"area": "Hyena Den", "set": {"have": "2/4", "step1": "DEX +1", "step2": "CRIT +1, DEX +2"}, "cards": [
+   {"monster": "Spotted Hyena", "type": "General", "owned": 1, "stats": "VIT +2"},
+   {"monster": "Fang Hyena", "type": "General", "owned": 1, "stats": "ATK +10"},
+   {"monster": "Leader Fang Hyena", "type": "Leader", "owned": 0, "stats": "ATK +15"},
+   {"monster": "Hyena King", "type": "Mini-Boss", "owned": 0, "stats": "DEX +5", "ability": "SP Leech 1% of damage", "class_boost": "Archer: Echo Arrow damage +10%"}]},
+  {"area": "Rhino Thicket", "set": {"have": "2/4", "step1": "DEF +2, VIT +1", "step2": "DEF +3, VIT +2"}, "cards": [
+   {"monster": "Grey Rhino", "type": "General", "owned": 2, "stats": "HP +250"},
+   {"monster": "Iron Horn Rhino", "type": "General", "owned": 1, "stats": "Crit Rate +3%"},
+   {"monster": "Leader Iron Horn Rhino", "type": "Leader", "owned": 0, "stats": "Crit Rate +5%"},
+   {"monster": "Rhino King", "type": "Mini-Boss", "owned": 0, "stats": "VIT +6", "ability": "Lifesteal 1% of damage", "class_boost": "Cleric: Grace buff 15% stronger (party)"}]},
+  {"area": "Tiger Thicket", "set": {"have": "2/4", "step1": "AGI +1", "step2": "AGI +2, ASPD +1%"}, "cards": [
+   {"monster": "Wild Tiger", "type": "General", "owned": 2, "stats": "INT +3"},
+   {"monster": "Saber Tiger", "type": "General", "owned": 1, "stats": "Move Speed +8%"},
+   {"monster": "Leader Saber Tiger", "type": "Leader", "owned": 0, "stats": "Move Speed +12%"},
+   {"monster": "Tiger King", "type": "Mini-Boss", "owned": 0, "stats": "Evasion +10, AGI +6", "ability": "SP Leech 1% of damage", "class_boost": "Mage: Cinder Rain damage +10%"}]},
+  {"area": "Boss Room • Whitefang Sabertooth", "set": null, "cards": [
+   {"monster": "Whitefang Sabertooth", "type": "Boss", "owned": 0, "stats": "ATK +25, MATK +25, AGI +7, DEX +5", "ability": "Attack Speed +8%, Move Speed +6%"}]},
+  {"area": "Scorpion Dunes", "set": {"have": "2/4", "step1": "CRIT +1, LUK +1", "step2": "CRIT +1, LUK +2"}, "cards": [
+   {"monster": "Sand Scorpion", "type": "General", "owned": 1, "stats": "STR +3"},
+   {"monster": "Black Scorpion", "type": "General", "owned": 1, "stats": "DEX +3"},
+   {"monster": "Leader Black Scorpion", "type": "Leader", "owned": 0, "stats": "DEX +5"},
+   {"monster": "Scorpion King", "type": "Mini-Boss", "owned": 0, "stats": "LUK +8", "ability": "5% chance to stun on hit", "class_boost": "Thief: Venom Dash damage +15%, poison +20%, +2s"}]},
+  {"area": "Ram Cliffs", "set": {"have": "2/4", "step1": "INT +1, MDEF +2", "step2": "INT +2, MDEF +3"}, "cards": [
+   {"monster": "Cliff Ram", "type": "General", "owned": 1, "stats": "AGI +3"},
+   {"monster": "Ironhorn Ram", "type": "General", "owned": 1, "stats": "DEF +10"},
+   {"monster": "Leader Ironhorn Ram", "type": "Leader", "owned": 0, "stats": "DEF +15"},
+   {"monster": "Ram King", "type": "Mini-Boss", "owned": 0, "stats": "INT +8", "ability": "SP Leech 2% of damage", "class_boost": "Mage: Stone Fangs damage +10%"}]},
+  {"area": "Stone Golem Valley", "set": {"have": "3/4", "step1": "DEF +4", "step2": "DEF +4, HP +1%"}, "cards": [
+   {"monster": "Stone Golem", "type": "General", "owned": 1, "stats": "ATK +18"},
+   {"monster": "Spiked Stone Golem", "type": "General", "owned": 1, "stats": "ATK +4%"},
+   {"monster": "Leader Spiked Stone Golem", "type": "Leader", "owned": 0, "stats": "ATK +6%"},
+   {"monster": "Stone Golem King", "type": "Mini-Boss", "owned": 1, "stats": "DEF +15", "ability": "Lifesteal 2% of damage", "class_boost": "Swordsman: War Cry area +20%"}]},
+  {"area": "Boss Room • Obsidian Pharaoh", "set": null, "cards": [
+   {"monster": "Obsidian Pharaoh", "type": "Boss", "owned": 0, "stats": "ATK +35, MATK +35, INT +9, DEX +6", "ability": "Cast Speed +10%, SP Regen +25%"}]},
+  {"area": "Polar Bear Plain", "set": {"have": "2/4", "step1": "HP +100, STR +2", "step2": "HP +100, STR +2"}, "cards": [
+   {"monster": "Polar Bear", "type": "General", "owned": 1, "stats": "STR +5"},
+   {"monster": "Frost Polar Bear", "type": "General", "owned": 2, "stats": "HP +600"},
+   {"monster": "Leader Frost Polar Bear", "type": "Leader", "owned": 0, "stats": "HP +900"},
+   {"monster": "Polar Bear King", "type": "Mini-Boss", "owned": 0, "stats": "STR +10", "ability": "Lifesteal 2% of damage", "class_boost": "Merchant: Earthsplitter area +20%"}]},
+  {"area": "Snow Wolf Forest", "set": {"have": "2/4", "step1": "AGI +2, FLEE +2", "step2": "AGI +2, FLEE +3"}, "cards": [
+   {"monster": "Snow Wolf", "type": "General", "owned": 1, "stats": "MDEF +10"},
+   {"monster": "Blue-Eyed Wolf", "type": "General", "owned": 2, "stats": "ATK +25"},
+   {"monster": "Leader Blue-Eyed Wolf", "type": "Leader", "owned": 0, "stats": "ATK +38"},
+   {"monster": "Wolf King", "type": "Mini-Boss", "owned": 0, "stats": "Evasion +15, AGI +10", "ability": "6% chance to stun on hit", "class_boost": "Archer: Skyfall Volley area +20%, slow +1s"}]},
+  {"area": "Ice Golem Peak", "set": {"have": "3/4", "step1": "INT +2", "step2": "Cast Speed +1, INT +2"}, "cards": [
+   {"monster": "Ice Golem", "type": "General", "owned": 1, "stats": "LUK +5"},
+   {"monster": "Spiked Ice Golem", "type": "General", "owned": 1, "stats": "MATK +5%"},
+   {"monster": "Leader Spiked Ice Golem", "type": "Leader", "owned": 0, "stats": "MATK +8%"},
+   {"monster": "Ice Golem King", "type": "Mini-Boss", "owned": 1, "stats": "INT +10", "ability": "SP Leech 2% of damage", "class_boost": "Mage: Frost Bloom +15%, freeze +10%"}]},
+  {"area": "Boss Room • Tempest Dragon King", "set": null, "cards": [
+   {"monster": "Tempest Dragon King", "type": "Boss", "owned": 0, "stats": "ATK +30, MATK +30, INT +8, DEX +8", "ability": "Skill Cooldown -10%"}]},
+  {"area": "Lava Turtle Hill", "set": {"have": "1/4", "step1": "MDEF +4, VIT +2", "step2": "MDEF +4, VIT +3"}, "cards": [
+   {"monster": "Great Lava Turtle", "type": "Mini-Boss", "owned": 0, "stats": "VIT +11", "ability": "Lifesteal 3% of damage", "class_boost": "Cleric: Mending Light heal +25%"},
+   {"monster": "Volcanic Demon Turtle", "type": "General", "owned": 0, "stats": "VIT +5"},
+   {"monster": "Leader Magma Spike Turtle", "type": "Leader", "owned": 0, "stats": "DEF +27"},
+   {"monster": "Magma Spike Turtle", "type": "General", "owned": 1, "stats": "DEF +18"}]},
+  {"area": "Fire Bat Cliffs", "set": {"have": "2/4", "step1": "DEF +5, HP +1%", "step2": "DEF +5, HP +1%"}, "cards": [
+   {"monster": "Blaze Bat", "type": "General", "owned": 1, "stats": "Move Speed +10%"},
+   {"monster": "Fire Bat Lord", "type": "Mini-Boss", "owned": 0, "stats": "Evasion +18, AGI +11", "ability": "7% chance to stun on hit", "class_boost": "Cleric: Halo Burst damage +15%"},
+   {"monster": "Fire Bat", "type": "General", "owned": 1, "stats": "AGI +5"},
+   {"monster": "Leader Blaze Bat", "type": "Leader", "owned": 0, "stats": "Move Speed +15%"}]},
+  {"area": "Hellhound Ash Fields", "set": {"have": "2/4", "step1": "STR +2", "step2": "ATK +1%, MATK +1%, STR +3"}, "cards": [
+   {"monster": "Obsidian Hellhound", "type": "General", "owned": 2, "stats": "ATK +6%"},
+   {"monster": "Hellhound Alpha", "type": "Mini-Boss", "owned": 0, "stats": "STR +12", "ability": "Lifesteal 3% of damage", "class_boost": "Swordsman: Blazing Ring +15%, burn +5s"},
+   {"monster": "Ash Hellhound", "type": "General", "owned": 0, "stats": "ATK +30"},
+   {"monster": "Leader Obsidian Hellhound", "type": "Leader", "owned": 1, "stats": "ATK +9%"}]},
+  {"area": "Boss Arena • Volcano Turtle King", "set": null, "cards": [
+   {"monster": "Volcano Turtle King", "type": "Boss", "owned": 0, "stats": "ATK +33, MATK +33, STR +10, INT +10", "ability": "DEF Pen 10%, MDEF Pen 10%"}]}
+ ]
+}
