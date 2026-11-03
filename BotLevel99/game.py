@@ -216,6 +216,13 @@ def target_kind(img):
     return 'boss' if boss > leader else 'leader'
 
 
+def skills_tab(img):
+    """Status & Skills open on its Skills tab: the window is wider there and its red X, a size
+    up from the Stats tab's, sits top right. Scored 0.97 on 2026-11-04; the Adventure Book's X
+    0.58, the Bag, HUD and Stats tab 0.33 or less."""
+    return find(img, 'close_x_status', 0.85, scales=(1.2,), region=BOOK_X_REGION)[1] is not None
+
+
 def screen_state(img):
     """'book', 'bag', 'menu', 'hud' or 'unknown'.
 
@@ -871,9 +878,9 @@ class Game:
     def open_stats(self):
         """Open Status & Skills on its Stats tab. True when the stat rows show.
 
-        The window remembers its last tab; on Skills it is wider and its red X sits where
-        the Adventure Book's does, so screen_state() calls it 'book'. Also measures where
-        the window is (stats_dx): it moves sideways now and then.
+        The window remembers its last tab, so after the player has been on Skills (setting an
+        Extra, say) it opens there (skills_tab). Also measures where the window is (stats_dx):
+        it moves sideways now and then.
         """
         for _ in range(2):
             if not self.to_hud():
@@ -892,7 +899,8 @@ class Game:
                         continue
                     self.stats_dx = xy[0] - STATS_STR_X
                     return True
-                if screen_state(img) == 'book':
+                if skills_tab(img):
+                    step('เปิดหน้า Stats', 'หน้าต่างเปิดค้างที่ Skills กดแท็บ Stats')
                     self.tap(STATUS_TAB_STATS_WIDE, 1.2)
                 time.sleep(0.4)
         return False
