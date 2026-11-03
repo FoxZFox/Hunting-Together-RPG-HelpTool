@@ -486,7 +486,7 @@ class Bot:
         log('หยุดฟาร์มบอสแล้ว')
 
     def watch_boss(self, boss, wait_s, limit, after_kill):
-        """After pressing Hunt on a boss, watch the screen about once a second until it is time
+        """After pressing Hunt on a boss, watch the screen twice a second until it is time
         to move on. Returns (result, saw the room) where result is 'killed' (it died while we
         were here), 'card' (and its card dropped), 'dead' (its respawn timer is over wait_s)
         or 'lost' (no HP bar or timer within `limit` seconds). After a kill it keeps looking
@@ -503,7 +503,9 @@ class Bot:
                 fought = time.time()
             else:
                 left = g.boss_respawn(img)
-                if left is not None and fought:
+                # the badge went away: a strong class kills a boss in seconds, and its respawn
+                # sign is often off screen (the camera faces the door), so do not wait for the sign
+                if fought and (left is not None or time.time() - fought > 4):
                     st['kills'] += 1
                     log(f'ฆ่า {boss} แล้ว (รวม {st["kills"]} ตัว)')
                     step('รอดูการ์ด', boss)
@@ -512,11 +514,10 @@ class Bot:
                 if left is not None and left > wait_s:
                     log(f'{boss} ตายอยู่ จะเกิดอีก {left // 60}:{left % 60:02d}')
                     return 'dead', True
-                if left is None and time.time() - (fought or start) > (40 if fought else limit):
-                    if not fought:
-                        log(f'กด Hunt แล้ว {limit} วินาทียังไม่เห็นแถบเลือด {boss}')
-                    return 'lost', bool(fought)
-            self.wait(1)
+                if left is None and not fought and time.time() - start > limit:
+                    log(f'กด Hunt แล้ว {limit} วินาทียังไม่เห็นแถบเลือด {boss}')
+                    return 'lost', False
+            self.wait(0.5)
         return ('card' if got else 'lost'), bool(fought)
 
     def wait_card(self, boss, seconds):
