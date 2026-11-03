@@ -25,6 +25,8 @@ from game import STAT_NAMES, STEPS, TRACE, screen_state
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(HERE, 'ui')
+DATA_DIR = os.path.join(HERE, 'data')
+CLASSES = ('Swordsman', 'Archer', 'Mage', 'Thief', 'Merchant', 'Cleric', 'Alchemist', 'Samurai')
 HOST, PORT = '127.0.0.1', 8765
 SETTINGS = {  # [bot] keys the panel may change: key -> (type, min, max)
     'stop_level': (int, 1, 200),
@@ -110,6 +112,28 @@ class Panel:
         if self.bot.raise_stats(g.level(self.idle_view.get('level'), g.shot())[0]) and g.stats:
             log('Stats ตอนนี้: ' + ' · '.join(f'{s} {g.stats[s]}' for s in STAT_NAMES))
 
+    def read_cards(self):
+        """Re-read how many of each card we own (Card Book) into data/cards.json."""
+        data = load_data('cards.json')
+        log('เริ่มอ่านการ์ดที่มีจาก Card Book')
+        areas = [(a['area'], [c['monster'] for c in a['cards']]) for a in data['areas']]
+        owned = self.bot.game.scan_card_owned(areas, self.bot.area_names)
+        if not owned:
+            log('อ่านการ์ดไม่สำเร็จ')
+            return
+        new = []
+        for card in (c for a in data['areas'] for c in a['cards']):
+            if card['monster'] in owned:
+                if owned[card['monster']] and not card.get('owned'):
+                    new.append(card['monster'])
+                card['owned'] = owned[card['monster']]
+        data['owned_read'] = time.strftime('%Y-%m-%d %H:%M')
+        with open(os.path.join(DATA_DIR, 'cards.json'), 'w', encoding='utf-8', newline='\n') as f:
+            json.dump(data, f, ensure_ascii=False, indent=1)
+        total = sum(len(a['cards']) for a in data['areas'])
+        have = sum(1 for a in data['areas'] for c in a['cards'] if c.get('owned'))
+        log(f'อ่านการ์ดแล้ว {len(owned)}/{total} ใบ มีอยู่ {have} ใบ' + (f' ใหม่: {", ".join(new)}' if new else ''))
+
     def scan(self):
         log('เริ่มสแกนข้อมูลมอนจาก Adventure Book')
         areas = self.bot.game.scan_monsters()
@@ -192,6 +216,11 @@ class Panel:
             'boss': cfg.get('boss', {}),
             'bosses': [{'name': m['name'], 'area': a['name'], 'level': m.get('level')}
                        for a in self.bot.areas for m in a['monsters'] if m.get('kind') == 'Boss'],
+            'build': cfg.get('build', {}),
+            'builds': load_data('builds.json'),
+            'cards': load_data('cards.json'),
+            'extras': load_data('extras.json'),
+            'classes': CLASSES,
         }
 
     # ---- saving config.toml (keeps the comments in the file) ---------------
@@ -269,6 +298,26 @@ class Panel:
         self._write_config(text)
         return None
 
+    def save_build(self, values):
+        """[build]: which class the Build tab shows, and the classes already at Lv.99
+        (their Extra passives are unlocked)."""
+        job = str(values.get('class', ''))
+        done = [c for c in CLASSES if c in values.get('classes_99', [])]
+        if job not in CLASSES:
+            return 'ไม่รู้จักอาชีพนี้'
+        lines = {'class': json.dumps(job), 'classes_99': json.dumps(done)}
+        text = open(CONFIG_PATH, encoding='utf-8').read()
+        if not re.search(r'(?m)^\[build\]', text):
+            text = text.rstrip('\n') + ('\n\n# ----- แท็บ Build ของหน้าควบคุม -----\n[build]\n'
+                                       'class = "Thief"\nclasses_99 = []   # อาชีพที่ถึง Lv.99 แล้ว (ปลด Extra ของอาชีพนั้น)\n')
+        for key, value in lines.items():
+            text, n = re.subn(rf'(?m)^({key}\s*=\s*)[^#\n]*?(\s*(#.*)?)$',
+                              lambda m: f'{m.group(1)}{value}{m.group(2)}', text)
+            if n != 1:
+                return f'หา {key} ใน config.toml ไม่เจอ'
+        self._write_config(text)
+        return None
+
     def save_boss(self, values):
         """Save the [boss] section's values, keeping the comments in the file."""
         targets = [str(t) for t in values.get('targets', [])]
@@ -334,6 +383,15 @@ class Panel:
         with open(CONFIG_PATH, 'w', encoding='utf-8', newline='\n') as f:
             f.write(text)
         self.bot.cfg = load_config()    # the running bot picks this up on its next round
+
+
+def load_data(name):
+    """A JSON file from data/, or {} when it is missing."""
+    try:
+        with open(os.path.join(DATA_DIR, name), encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
 
 
 class Server(http.server.ThreadingHTTPServer):
@@ -416,6 +474,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, {'ok': True} if p.run_task('hunt', lambda: p.hunt(monster)) else busy)
         if path == '/api/scan':
             return self._send(200, {'ok': True} if p.run_task('scan', p.scan) else busy)
+        if path == '/api/cards/read':
+            return self._send(200, {'ok': True} if p.run_task('cards', p.read_cards) else busy)
+        if path == '/api/build':
+            err = p.save_build(body.get('build', {}))
+            return self._send(200, {'ok': not err, 'error': err})
         if path == '/api/stats':
             err = p.save_stats(body.get('job'), body.get('rows', []))
             return self._send(200, {'ok': not err, 'error': err})

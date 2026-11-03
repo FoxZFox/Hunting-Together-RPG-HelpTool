@@ -1,0 +1,63 @@
+{
+ "Thief": {
+  "summary": "Thief สายตีประชิดด้วยมีด เน้นตีให้เร็วจนชน ASPD 190 แล้วอัด ATK กับ Crit ไม่ลง VIT",
+  "assumes": [
+   "ดื่มยา Haste ตลอดเวลาที่ตี (Attack Speed +20%, Cast Speed +10%) ยาในเกมนี้ไม่มีคูลดาวน์",
+   "ไม่นับของสวมใส่ ตัวเลขดาเมจเทียบกันเองระหว่างการ์ดและ Extra เป็นค่าประมาณ",
+   "ATK% ทุกแหล่งรวมเป็นกองเดียวแล้วค่อยคูณ (วัดแล้ว: Blade Training ATK +20% ได้ ATK จริงเพิ่ม 13.9%) กองยิ่งใหญ่ การ์ด ATK% ยิ่งคุ้มน้อยลง ส่วน STR กับ ATK ตัวเลขคุ้มขึ้น",
+   "Attack Speed 1% ≈ ASPD 0.2 (วัดจาก Haste) และ ASPD ตันที่ 190 = ตี 5 ครั้งต่อวินาที",
+   "STR 1 แต้ม ≈ ATK พื้นฐาน 5 (ประมาณจากที่วัดตอน Lv.90)"
+  ],
+  "stats": {
+   "now": {"STR": 99, "AGI": 69, "LUK": 62, "note": "AGI 69 + โบนัส 54 = 123 คือขั้นต่ำที่ได้ ASPD 190 ตอนดื่ม Haste + Blade Training + การ์ด Fire Bat (ถอด Fire Bat แล้วได้ 189) ย้าย VIT 22 ไป LUK ได้ LUK +7"},
+   "whitefang": {"STR": 99, "AGI": 56, "LUK": 74, "note": "ตอนได้การ์ด Whitefang (AGI +7, Attack Speed +8%) ลด AGI ได้ราว 13 แต้ม ต้องวัด ASPD อีกครั้งหลังลงแต้ม"},
+   "full": {"STR": 99, "AGI": 42, "LUK": 84, "note": "มี Nimble Toss (+20%) และ Whitefang ด้วย Attack Speed เหลือเฟือ ลด AGI ไปลง LUK ได้มาก ใช้แต้มครบ 1,244 ค่า AGI เป็นค่าประมาณ ลงแล้วเช็คว่า ASPD ยัง 190"}
+  },
+  "extras": [
+   {"name": "Blade Training", "why": "ATK +20%, Attack Speed +10% (ช่วยให้ชน 190) และดาเมจ +10% ใส่ศัตรูที่ติดสตัน"},
+   {"name": "Hunter's Focus", "why": "ATK +20%"},
+   {"name": "Heavy Lifter", "why": "ATK +20% และ STR +10 (เพิ่ม STR เกิน 99 ได้)"},
+   {"name": "Devotion", "why": "ATK +20% พร้อม DEF/MDEF +20"},
+   {"name": "Lingering Edge", "why": "Crit DMG +10% เข้ากับสาย Crit"},
+   {"name": "Nimble Toss", "why": "Attack Speed +20% ทำให้ลด AGI ไปลง LUK ได้อีกมาก"},
+   {"name": "Swift Step", "why": "Attack Speed +15%, Evasion +15 ใช้แทน Nimble Toss ได้"},
+   {"name": "Steel Skin", "why": "VIT +10, Max HP +10% ไม่เพิ่มดาเมจ แต่ทนขึ้น"},
+   {"name": "Second Wind", "why": "ฟื้น HP เร็วขึ้น 100% ยา HP แรงขึ้น 50% ช่วยให้อยู่รอด"}
+  ],
+  "cards": [
+   {"monster": "Volcano Turtle King", "why": "STR +10 กับ ATK +33 แรงสุด และเจาะ DEF 10%", "gain": "+10%"},
+   {"monster": "Hellhound Alpha", "why": "STR +12", "gain": "+7%"},
+   {"monster": "Polar Bear King", "why": "STR +10", "gain": "+6%"},
+   {"monster": "Scorpion King", "why": "Venom Dash ดาเมจ +15% (เฉพาะ Thief) พิษแรงขึ้น และ LUK +8", "gain": "+5–6%"},
+   {"monster": "Tempest Dragon King", "why": "ATK +30 และสกิลคูลดาวน์ −10% (Umbral Strike, Fade บ่อยขึ้น)", "gain": "+5–6%"},
+   {"monster": "Leader Blue-Eyed Wolf", "why": "ATK +38", "gain": "+5%"},
+   {"monster": "Gorilla King", "why": "ATK +12, STR +5 พร้อม Max HP +6% และรับดาเมจน้อยลง 5%", "gain": "+5%"},
+   {"monster": "Leader Obsidian Hellhound", "why": "ATK +9%", "gain": "+4%"},
+   {"monster": "Obsidian Pharaoh", "why": "ATK +35 ที่เหลือเป็นสายเวท", "gain": "+4%"},
+   {"monster": "Whitefang Sabertooth", "why": "ATK +25, AGI +7, Attack Speed +8% ช่วยลด AGI ไปลง LUK", "gain": "+3% และ ASPD"},
+   {"monster": "Rabbit King", "why": "Double Hit +5% (เฉพาะ Thief), สตัน 3% เข้ากับ Blade Training, AGI +3", "gain": "+3–4%"},
+   {"monster": "Ash Hellhound", "why": "ATK +30", "gain": "+4%"},
+   {"monster": "Leader Spiked Stone Golem", "why": "ATK +6%", "gain": "+3%"}
+  ],
+  "cards_now": [
+   "Volcano Turtle King", "Hellhound Alpha", "Polar Bear King", "Scorpion King", "Tempest Dragon King",
+   "Whitefang Sabertooth", "Leader Blue-Eyed Wolf", "Gorilla King", "Fire Bat", "Leader Obsidian Hellhound",
+   "Rabbit King", "Obsidian Hellhound", "Ash Hellhound", "Blue-Eyed Wolf", "Polar Bear", "Iron Horn Rhino",
+   "Stone Golem", "Leader Spiked Stone Golem", "Spiked Stone Golem", "Sand Scorpion", "Cliff Ram", "Ice Golem"
+  ],
+  "card_notes": {
+   "Fire Bat": "AGI +5 ต้องใส่ไว้จนกว่าจะมี Whitefang หรือ Nimble Toss ไม่งั้น ASPD ตกจาก 190",
+   "Rabbit King": "Double Hit +5% (เฉพาะ Thief) และ AGI +3 ช่วยให้ถึง 190",
+   "Blue-Eyed Wolf": "ATK +25",
+   "Polar Bear": "STR +5",
+   "Iron Horn Rhino": "Crit Rate +3%",
+   "Stone Golem": "ATK +18",
+   "Obsidian Hellhound": "ATK +6%",
+   "Spiked Stone Golem": "ATK +4%",
+   "Sand Scorpion": "STR +3",
+   "Cliff Ram": "AGI +3 ใช้แทนเมื่อ ASPD ไม่ถึง 190",
+   "Ice Golem": "LUK +5"
+  },
+  "sets": "เก็บการ์ดให้ครบแมพได้โบนัสถาวรโดยไม่ต้องใส่: Hellhound Ash Fields (ATK +1%, STR +3), Tiger Thicket (Attack Speed +1%, AGI +2), Scorpion Dunes (CRIT +1, LUK +2), Hyena Den (CRIT +1)"
+ }
+}

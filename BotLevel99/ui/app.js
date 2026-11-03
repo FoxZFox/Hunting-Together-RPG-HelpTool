@@ -9,7 +9,7 @@ const SCREEN_NAMES = {
   unknown: 'หน้าจอที่บอทไม่รู้จัก',
   offline: 'Roblox หรือ LDPlayer ไม่ตอบ',
 };
-const TASK_NAMES = { gear: 'กด Auto Gear', hunt: 'กด Hunt', scan: 'สแกนข้อมูลมอน', stats: 'อัพ Stats' };
+const TASK_NAMES = { gear: 'กด Auto Gear', hunt: 'กด Hunt', scan: 'สแกนข้อมูลมอน', stats: 'อัพ Stats', cards: 'อ่านการ์ด' };
 const STAT_NAMES = ['STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK'];
 const KIND_NAMES = { Normal: 'ธรรมดา', Leader: 'Leader', 'Mini-Boss': 'Mini-Boss', Boss: 'บอส' };
 
@@ -86,6 +86,7 @@ async function loadConfig() {
   renderMonsters();
   fillSettings();
   fillBoss();
+  renderBuild();
   applyMode();
   renderBossRoute();
   if (!app.statDirty) loadStatDraft(app.statJob);
@@ -106,7 +107,7 @@ async function poll() {
     app.serverNow = s.now;
     app.steps = s.steps || [];
     appendLogs(s.logs);
-    if (finishedTask === 'scan') await loadConfig();
+    if (finishedTask === 'scan' || finishedTask === 'cards') await loadConfig();
   } catch {
     app.online = false;
   }
@@ -283,6 +284,7 @@ function updateLiveBits() {
   $('#gear-btn').disabled = busy;
   $('#scan-btn').disabled = busy;
   $('#stats-run').disabled = busy;
+  $('#cards-read').disabled = busy;
   markStatRows();
   $('#busy-hint').hidden = !app.running;
   for (const b of document.querySelectorAll('.hunt-btn')) b.disabled = busy;
@@ -764,6 +766,117 @@ $('#boss-form').addEventListener('submit', async (e) => {
   if (await saveBoss()) setMsg('#boss-msg', app.running ? 'บันทึกแล้ว บอทใช้ค่าใหม่ในรอบถัดไป' : 'บันทึกแล้ว', 'ok');
 });
 
+
+// ---- build ------------------------------------------------------------------
+// data/builds.json ranks each class's Extra passives and cards. "Full" is the top of each
+// list; "now" is the best of what this account owns (cards.json) and has unlocked
+// (an Extra of another class needs that class at Lv.99).
+const CARD_FROM = {
+  Boss: () => 'บอสโลก (โหมดล่าบอส)',
+  'Mini-Boss': () => 'กล่องทองจากการตีมอน',
+  Leader: (area) => `Leader ที่ ${area} (เกิดทุก 5 นาที)`,
+  General: (area) => `มอนปกติที่ ${area}`,
+};
+
+function buildData() {
+  const cfg = app.cfg || {};
+  const job = cfg.build?.class || Object.keys(cfg.builds || {})[0];
+  const done = cfg.build?.classes_99 || [];
+  const cards = new Map();
+  for (const a of cfg.cards?.areas || []) for (const c of a.cards) cards.set(c.monster, { ...c, area: a.area });
+  const extras = new Map((cfg.extras?.extras || []).map((e) => [e.name, e]));
+  const unlocked = (e) => !!e && (!e.needs || done.includes(e.needs.split(' ')[0]));
+  return { cfg, job, done, build: cfg.builds?.[job], cards, extras, unlocked };
+}
+
+function renderBuild() {
+  const d = buildData();
+  const pick = $('#build-class');
+  pick.replaceChildren(...(d.cfg.classes || []).map((c) => el('option', { value: c, text: d.cfg.builds?.[c] ? c : `${c} (ยังไม่มี build)` })));
+  pick.value = d.job || '';
+  $('#class-99').replaceChildren(...(d.cfg.classes || []).map((c) => el('label', { class: 'check' },
+    el('input', { type: 'checkbox', value: c, checked: d.done.includes(c) }), c)));
+  const read = d.cfg.cards?.owned_read || (d.cfg.cards?.read || '').slice(0, 10);
+  $('#cards-read-note').textContent = read ? `การ์ดที่มี: อ่านล่าสุด ${read}` : '';
+  const b = d.build;
+  $('#build-cols').hidden = !b;
+  $('#build-summary').textContent = b ? b.summary : `ยังไม่มี build ของ ${d.job || 'อาชีพนี้'}`;
+  if (!b) return;
+  const owned = (name) => d.cards.get(name)?.owned || 0;
+
+  // full: the top of each list
+  const fullStats = b.stats.full;
+  $('#build-full').replaceChildren(
+    statBlock(fullStats),
+    slotList('Extra 6 ช่อง', b.extras.slice(0, 6).map((x) => extraRow(d, x.name, x.why))),
+    slotList('การ์ด 8 ใบ', b.cards.slice(0, 8).map((c) => cardRow(d, c.monster, c.why, c.gain))));
+
+  // now: the best of what is owned / unlocked
+  const exNow = b.extras.filter((x) => d.unlocked(d.extras.get(x.name))).slice(0, 6);
+  const nextEx = b.extras.find((x) => !d.unlocked(d.extras.get(x.name)));
+  const exRows = exNow.map((x) => extraRow(d, x.name, x.why));
+  while (exRows.length < 6) {
+    exRows.push(el('li', { class: 'slot is-empty' }, el('span', { class: 'slot-name', text: 'ว่าง' }),
+      el('span', { class: 'slot-why', text: nextEx ? `ยังไม่มี Extra ที่ช่วย ${d.job} เพิ่ม เอา ${d.extras.get(nextEx.name)?.class} ถึง Lv.99 จะได้ ${nextEx.name}` : 'ไม่มี Extra ที่ช่วยเพิ่มแล้ว' })));
+  }
+  const cardNow = b.cards_now.filter((n) => owned(n)).slice(0, 8);
+  const why = (n) => b.cards.find((c) => c.monster === n) || { why: b.card_notes?.[n] };
+  const hunt = b.cards.filter((c) => !owned(c.monster)).slice(0, 4);
+  const nowStats = owned('Whitefang Sabertooth') && b.stats.whitefang ? b.stats.whitefang : b.stats.now;
+  $('#build-now').replaceChildren(
+    statBlock(nowStats),
+    slotList(`Extra ${exNow.length}/6 ช่อง`, exRows),
+    slotList(`การ์ด ${cardNow.length}/8 ใบ`, cardNow.map((n) => cardRow(d, n, why(n).why, why(n).gain))),
+    hunt.length ? slotList('การ์ดที่ควรหาต่อ', hunt.map((c) => cardRow(d, c.monster, c.why, c.gain))) : null);
+
+  $('#build-assumes').replaceChildren(...(b.assumes || []).map((t) => el('li', { text: t })));
+  $('#build-sets').textContent = b.sets || '';
+}
+
+function statBlock(s) {
+  return el('div', { class: 'build-stats' },
+    el('div', { class: 'stat-now' }, ...['STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK'].filter((k) => s[k]).map((k) =>
+      el('span', { class: 'stat-chip' }, el('b', { 'data-stat': k, text: k }), String(s[k])))),
+    el('p', { class: 'field-help', text: s.note || '' }));
+}
+
+function slotList(title, rows) {
+  return el('div', { class: 'slot-group' }, el('p', { class: 'slot-title', text: title }), el('ol', { class: 'slots' }, ...rows));
+}
+
+function extraRow(d, name, why) {
+  const e = d.extras.get(name) || {};
+  const ok = d.unlocked(e);
+  return el('li', { class: `slot${ok ? '' : ' is-missing'}` },
+    el('span', { class: 'slot-name', text: name }),
+    el('span', { class: 'slot-tag', 'data-ok': ok ? '1' : null, text: ok ? `${e.class} ✓` : `ต้องมี ${e.needs}` }),
+    el('span', { class: 'slot-why', text: why || e.effect || '' }));
+}
+
+function cardRow(d, name, why, gain) {
+  const c = d.cards.get(name) || {};
+  const have = c.owned || 0;
+  const stats = [c.stats, c.ability, c.class_boost].filter(Boolean).join(' · ');
+  return el('li', { class: `slot${have ? '' : ' is-missing'}` },
+    el('span', { class: 'slot-name' }, name, c.type && c.type !== 'General' ? el('span', { class: 'tag', 'data-kind': c.type, text: c.type }) : null),
+    el('span', { class: 'slot-tag', 'data-ok': have ? '1' : null, text: have ? `มี ${have} ใบ` : `ยังไม่มี · ${(CARD_FROM[c.type] || CARD_FROM.General)(c.area)}` }),
+    el('span', { class: 'slot-why', text: [why, gain ? `ดาเมจ ${gain}` : null].filter(Boolean).join(' · ') }),
+    stats ? el('span', { class: 'slot-stats', text: stats }) : null);
+}
+
+async function saveBuild(change) {
+  const cur = app.cfg?.build || {};
+  const build = { class: cur.class, classes_99: [...(cur.classes_99 || [])], ...change };
+  const res = await api('/api/build', { build }).catch(() => null);
+  if (!res?.ok) return setMsg('#cards-read-note', res?.error || 'บันทึกไม่สำเร็จ', 'bad');
+  await loadConfig();
+}
+
+$('#build-class').addEventListener('change', (e) => saveBuild({ class: e.target.value }));
+$('#class-99').addEventListener('change', () => saveBuild({
+  classes_99: [...document.querySelectorAll('#class-99 input:checked')].map((i) => i.value),
+}));
+$('#cards-read').addEventListener('click', () => api('/api/cards/read', {}).catch(() => null));
 
 // ---- monsters ---------------------------------------------------------------
 function renderMonsters() {

@@ -579,6 +579,39 @@ class Game:
             time.sleep(0.8)
         return False
 
+    def scan_card_owned(self, card_areas, known):
+        """Walk Adventure Book > Card Book and read how many copies of each card we own.
+        card_areas: [(area, [card monsters in their slot order])]; known: every area in list
+        order (for _select_area). Returns {monster: copies} for the cards it could read."""
+        owned = {}
+        step('อ่านการ์ดที่มี')
+        if not self.open_window(KEY_N, 'book', MENU_BOOK):
+            self.log('เปิด Adventure Book ไม่ได้')
+            return owned
+        self.tap(BOOK_TAB_CARDS, 1.2)
+        try:
+            for area, names in card_areas:
+                if not self._select_area(area, known):
+                    self.log(f'หาแมพ "{area}" ในหน้า Card Book ไม่เจอ ข้ามไป')
+                    continue
+                time.sleep(0.6)
+                for xy in CARD_SLOTS[:len(names)]:
+                    self.tap(xy, 0.8)
+                    img = self.shot()
+                    who = None
+                    for scale, mode in ((2.5, 'dark'), (3, 'gray')):
+                        who = best_match(self.ocr.text(img, CARD_DROPS_RECT, scale, mode), names, 0.6, 0.02)
+                        if who is not None:
+                            break
+                    copies = parse_owned(self.ocr.text(img, CARD_OWNED_RECT, 2))
+                    if copies is None:
+                        copies = parse_owned(self.ocr.text(img, CARD_OWNED_RECT, 2, 'dark'))
+                    if who is not None and copies is not None:
+                        owned[names[who]] = copies
+        finally:
+            self.to_hud()
+        return owned
+
     def _select_card(self, monster):
         """Tap the card whose "Drops from" names `monster` best ("Saber Tiger" must not
         settle for "Leader Saber Tiger")."""

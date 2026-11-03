@@ -123,6 +123,7 @@
         <button class="tab tab-mode" role="tab" id="tab-plan" data-mode-only="level" aria-controls="panel-plan" aria-selected="false">แผนการตี</button>
         <button class="tab tab-mode" role="tab" id="tab-boss" data-mode-only="boss" aria-controls="panel-boss" aria-selected="false" hidden>ตั้งค่าล่าบอส</button>
         <button class="tab" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false">ตารางอัพ Stats</button>
+        <button class="tab" role="tab" id="tab-build" aria-controls="panel-build" aria-selected="false">Build</button>
         <button class="tab" role="tab" id="tab-monsters" aria-controls="panel-monsters" aria-selected="false">มอนทั้งหมด</button>
         <button class="tab" role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false">ตั้งค่า</button>
       </div>
@@ -259,6 +260,38 @@
         </form>
         <h3 class="sub-title">การ์ดที่ได้ระหว่างล่าบอส</h3>
         <ol class="card-log" id="card-log"><li class="log-empty">ยังไม่ได้การ์ด</li></ol>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-build" aria-labelledby="tab-build" hidden>
+        <div class="panel-actions panel-actions-top">
+          <label class="job-pick">
+            <span class="field-name">อาชีพ</span>
+            <select id="build-class"></select>
+          </label>
+          <span class="spacer"></span>
+          <span class="form-msg" id="cards-read-note"></span>
+          <button class="btn btn-ghost" id="cards-read" type="button">อ่านการ์ดที่มีจากเกมใหม่</button>
+        </div>
+        <fieldset class="class-99">
+          <legend class="field-name">อาชีพที่ถึง Lv.99 แล้ว (ปลด Extra ของอาชีพนั้นให้ใช้ได้)</legend>
+          <div class="class-list" id="class-99"></div>
+        </fieldset>
+        <p class="panel-intro" id="build-summary"></p>
+        <div class="build-cols" id="build-cols">
+          <section class="build-col" aria-labelledby="build-now-title">
+            <h3 class="build-title" id="build-now-title">ใส่ตอนนี้ <small>จากการ์ดที่มีและ Extra ที่ปลดแล้ว</small></h3>
+            <div id="build-now"></div>
+          </section>
+          <section class="build-col is-full" aria-labelledby="build-full-title">
+            <h3 class="build-title" id="build-full-title">Full Build <small>มีการ์ดและ Extra ครบ</small></h3>
+            <div id="build-full"></div>
+          </section>
+        </div>
+        <details class="build-notes">
+          <summary>ข้อสมมติที่ใช้คิด และโบนัสเซ็ต</summary>
+          <ul id="build-assumes"></ul>
+          <p id="build-sets"></p>
+        </details>
       </div>
 
       <div class="tab-panel" role="tabpanel" id="panel-monsters" aria-labelledby="tab-monsters" hidden>
