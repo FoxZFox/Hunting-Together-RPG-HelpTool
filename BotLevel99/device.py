@@ -89,6 +89,15 @@ class Device:
             self.shell(f'sendevent {dev} 2 8 {-1 if clicks < 0 else 1}; sendevent {dev} 0 0 0')
             time.sleep(0.2)
 
+    def hold(self, code, seconds):
+        """Hold one key down for `seconds` (e.g. W to walk forward)."""
+        dev = self.keyboard_device()
+        self.shell(f'sendevent {dev} 1 {code} 1; sendevent {dev} 0 0 0')
+        try:
+            time.sleep(seconds)
+        finally:
+            self.shell(f'sendevent {dev} 1 {code} 0; sendevent {dev} 0 0 0')
+
     def key(self, code):
         """Press and release one key (Linux key code, e.g. 48 = B)."""
         dev = self.keyboard_device()

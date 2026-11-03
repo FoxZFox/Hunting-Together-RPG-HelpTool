@@ -1,0 +1,19 @@
+{
+ "notes": [
+  "How the bot dodges a boss's skills while it watches the fight. Each boss announces a skill with a red line under its HP bar: '<boss> uses <skill> — get out of the red ground!'.",
+  "Steps run that many seconds after the bot's screenshot first shows the warning: {key, at, times} taps a key, {hold, at, for} holds one down. The bot reads the warning 0-0.4 s after it appears.",
+  "Keys: Q = roll, W/A/S/D = move (W = towards where the camera looks). Timings come from the user's recorded Volcano Turtle King fight (2026-11-04), HP read on every frame: Magma Bite, Earthquake Stomp and Lava Rain hit at +1.7 to +2.15 s, Flame Breath at +1.1 to +1.6 s, Shell Fortress's first hit at +2.84 s. The user's rolls that worked were 1.0-1.8 s after the warning.",
+  "This file is read again at every fight, so timings can be tuned while the bot runs."
+ ],
+ "bosses": {
+  "Volcano Turtle King": {
+   "skills": {
+    "Magma Bite": {"how": "กลิ้ง Q", "steps": [{"key": "Q", "at": 0.9, "times": 2}]},
+    "Earthquake Stomp": {"how": "กลิ้ง Q", "steps": [{"key": "Q", "at": 1.0, "times": 2}]},
+    "Lava Rain": {"how": "กลิ้ง Q", "steps": [{"key": "Q", "at": 0.9, "times": 2}]},
+    "Flame Breath": {"how": "เดินเข้าไปอยู่ใต้บอส (กด W ค้าง)", "steps": [{"hold": "W", "at": 0.0, "for": 0.8}]},
+    "Shell Fortress": {"how": "กลิ้ง Q ให้ทันดาเมจแรก (ดาเมจตอนหมุนต่อจากนั้นเบา)", "steps": [{"key": "Q", "at": 2.2, "times": 2}]}
+   }
+  }
+ }
+}

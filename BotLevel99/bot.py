@@ -25,12 +25,14 @@ import winsound
 import cv2
 
 from device import Device, DeviceError
-from game import Game, app_page, find, screen_state, similar, step, target_kind
+from game import Game, app_page, find, screen_state, seen, similar, step, target_kind
 from ocr import Ocr
 from servers import Servers
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(HERE, 'config.toml')
+BOSSES_PATH = os.path.join(HERE, 'data', 'bosses.json')
+MAX_DEATHS_HERE = 5                       # deaths to one boss in one server before hopping on
 MONSTERS_PATH = os.path.join(HERE, 'data', 'monsters.json')
 LOG_DIR = os.path.join(HERE, 'logs')
 
@@ -62,6 +64,15 @@ def save_screen(img, tag, keep=50):
     return path
 
 
+def load_dodges():
+    """{boss: {skill: {how, steps}}} from data/bosses.json ({} when missing)."""
+    try:
+        with open(BOSSES_PATH, encoding='utf-8') as f:
+            return {b: v['skills'] for b, v in json.load(f)['bosses'].items()}
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
 def load_config():
     with open(CONFIG_PATH, 'rb') as f:
         return tomllib.load(f)
@@ -88,7 +99,7 @@ class Bot:
         self.status = {'screen': None, 'level': None, 'exp': None, 'target': None,
                        'started_at': None, 'start_level': None, 'finished': False,
                        'hunts': 0, 'rejoins': 0, 'restarts': 0,
-                       'mode': None, 'kills': 0, 'hops': 0, 'cards': [], 'boss_done': [],
+                       'mode': None, 'kills': 0, 'deaths': 0, 'hops': 0, 'cards': [], 'boss_done': [],
                        'timed_hops': 0, 'timers': 0, 'next_due': None}
         place = re.search(r'placeId=(\d+)', cfg['bot']['join_url'])
         self.servers = Servers(place.group(1)) if place else None
@@ -171,6 +182,7 @@ class Bot:
         st['hops'] += 1
         self.hop_started = time.time()
         self.timed = None
+        self.deaths_here = 0
         if not self.game.leave():
             self.dev.stop_roblox()
             self.wait(3)
@@ -444,8 +456,9 @@ class Bot:
         """Go to each chosen world boss in turn: kill it when it is up, hop to another server
         when it is down. A boss is done once its card drops (unless until_card is off)."""
         g, st = self.game, self.status
-        st.update(started_at=time.time(), finished=False, target=None, mode='boss', boss_done=[])
+        st.update(started_at=time.time(), finished=False, target=None, mode='boss', boss_done=[], deaths=0)
         self.stop_event.clear()
+        self.deaths_here = 0
         done = set()
         hunt_fails = lost = 0
         near = None                     # boss whose room we start next to (a hop puts you back where you were)
@@ -515,11 +528,17 @@ class Bot:
                         near, lost = None, 0
                 else:
                     lost = 0
+                if result == 'died':
+                    self.deaths_here += 1
+                    near = None                 # back in town: a long walk to the room
+                    if self.deaths_here < MAX_DEATHS_HERE:
+                        continue                # the boss is still up here: go again
                 if result == 'card' and cfg.get('until_card', True):
                     done.add(todo[0])
                     st['boss_done'] = sorted(done)
                 why = {'killed': f'ฆ่า {want[1]} แล้ว', 'card': f'ได้การ์ด {want[1]} แล้ว',
-                       'dead': f'{want[1]} ยังไม่เกิด', 'lost': f'หา {want[1]} ไม่เจอ'}[result]
+                       'dead': f'{want[1]} ยังไม่เกิด', 'lost': f'หา {want[1]} ไม่เจอ',
+                       'died': f'ตายกับ {want[1]} {MAX_DEATHS_HERE} รอบในห้องนี้'}[result]
                 if not self.stop_event.is_set() and not self.hop(why, want[1]):
                     self.failures += 1
             except DeviceError as e:
@@ -532,14 +551,47 @@ class Bot:
     def watch_boss(self, boss, wait_s, limit, after_kill):
         """After pressing Hunt on a boss, watch the screen twice a second until it is time
         to move on. Returns (result, saw the room) where result is 'killed' (it died while we
-        were here), 'card' (and its card dropped), 'dead' (its respawn timer is over wait_s)
-        or 'lost' (no HP bar or timer within `limit` seconds). After a kill it keeps looking
-        for an "Obtained!" popup for `after_kill` seconds."""
+        were here), 'card' (and its card dropped), 'dead' (its respawn timer is over wait_s),
+        'lost' (no HP bar or timer within `limit` seconds) or 'died' (we were killed and are
+        back in town). After a kill it keeps looking for an "Obtained!" popup for `after_kill`
+        seconds. A boss listed in data/bosses.json is watched as fast as screenshots allow,
+        and each skill it announces is dodged on that skill's timing."""
         g, st = self.game, self.status
         start, fought, got, sign_at = time.time(), None, False, None
+        dodges = load_dodges().get(boss, {})     # re-read each fight so data/bosses.json can be tuned
+        plan, last_warn = [], (None, 0.0)        # plan: [(when, step)]
+        took = 0.6                               # how long one screen check takes
+        checks, check_s = 0, 0.0
+
+        def run_due():
+            # a dodge that falls due before the next check would end goes now, on time
+            while plan and plan[0][0] - time.time() < took:
+                if self.wait(max(0.0, plan[0][0] - time.time())):
+                    return
+                s = plan.pop(0)[1]
+                if 'hold' in s:
+                    g.hold(s['hold'], s.get('for', 1.0))
+                else:
+                    g.press(s['key'], s.get('times', 1))
+
         step('ดูห้องบอส', boss)
         while not self.stop_event.is_set():
+            run_due()
+            begin = time.time()
             img = g.shot()
+            taken = (begin + time.time()) / 2            # dodges are timed from when the screen was seen
+            if dodges:
+                skill = g.boss_warning(img, dodges)
+                # one warning stays up for a few seconds: act on its first sighting only
+                if skill and (skill != last_warn[0] or taken - last_warn[1] > 4):
+                    log(f'{boss} ใช้ {skill} → {dodges[skill].get("how", "หลบ")}')
+                    plan = sorted(plan + [(taken + s['at'], s) for s in dodges[skill]['steps']],
+                                  key=lambda p: p[0])
+                    run_due()                            # e.g. Flame Breath: start walking at once
+                if skill:
+                    last_warn = (skill, taken)
+            if seen(img, 'you_died', 0.8):              # the badge goes when we die too: not a kill
+                return self.died(boss), True
             card = g.card_popup(img)
             if card is not None:
                 got |= self.card_dropped(card, boss)
@@ -573,8 +625,27 @@ class Bot:
                     log(f'กด Hunt แล้ว {limit} วินาทียังไม่เห็นแถบเลือด {boss}' if not sign_at
                         else f'{boss} น่าจะเกิดแล้วแต่ไม่เห็นแถบเลือด')
                     return 'lost', bool(sign_at)
-            self.wait(0.5)
+            took = time.time() - begin
+            checks += 1
+            check_s += took
+            if dodges and checks == 20:              # a warning is readable for only 0.8-1.9 s
+                log(f'เช็คจอ 20 รอบแรก เฉลี่ย {check_s / 20:.2f} วิ/รอบ (ควรต่ำกว่า 0.4)')
+            self.wait(0.1 if dodges else 0.5)
         return ('card' if got else 'lost'), bool(fought)
+
+    def died(self, boss):
+        """The "You Died" window is up: respawn in town for free. Returns 'died'."""
+        st = self.status
+        st['deaths'] = st.get('deaths', 0) + 1
+        log(f'ตายกับ {boss} (รวม {st["deaths"]} ครั้ง) → เกิดใหม่ในเมือง (ฟรี)')
+        step('ตาย เกิดใหม่ในเมือง', boss)
+        for _ in range(5):
+            img = self.game.shot()
+            if not seen(img, 'you_died', 0.8):
+                break
+            if not self.game.respawn_in_town(img):
+                self.wait(1)                    # it respawns in town by itself after 5:00 anyway
+        return 'died'
 
     def update_schedule(self, boss):
         """For the panel: how many servers have a known respawn of `boss`, and the soonest."""

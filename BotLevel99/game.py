@@ -63,6 +63,8 @@ MONSTER_STAT_COLUMNS = {'level': (505, 690), 'hp': (690, 875), 'atk': (875, 1060
 POINTS_LEFT_RECT = (360, 138, 215, 32)
 BAG_TITLE_RECT = (150, 132, 190, 30)      # "Lv.31 Merchant" above the character in the Bag
 BOSS_TIMER_RECT = (280, 60, 720, 260)     # floating "Respawns in 9:58" sign over a dead boss; moves with the camera
+BOSS_WARN_RECT = (280, 95, 720, 45)       # red "<boss> uses <skill> — get out of the red ground!" under the boss bar
+DIED_BUTTONS_RECT = (400, 290, 480, 130)  # You Died: green "Respawn here • 9 Robux" (never!) over blue "Respawn in town (free)"
 CARD_NAME_RECT = (520, 166, 240, 30)      # name at the top of the card in the "Obtained!" popup
 CARD_OWNED_RECT = (940, 420, 305, 26)     # Card Book > Card Details: "Owned  None yet" / "Owned  2 cards"
 ROBLOX_LEAVE_RECT = (63, 198, 380, 60)
@@ -76,6 +78,7 @@ ELEMENTS =('Neutral', 'Fire', 'Water', 'Wind', 'Earth', 'Holy', 'Shadow', 'Ghost
 KEY_B = 48                                # Bag
 KEY_N = 49                                # Adventure Book (opens on Card Book)
 KEY_O = 24                                # Roblox camera: zoom out one step
+KEYS = {'Q': 16, 'W': 17, 'E': 18, 'A': 30, 'S': 31, 'D': 32, 'F': 33}   # Q = roll, WASD = move
 
 # Template name -> region where it is looked for (x, y, w, h)
 TEMPLATE_REGIONS = {
@@ -96,6 +99,7 @@ TEMPLATE_REGIONS = {
     'target_boss': (490, 5, 130, 50),     # same place, "Boss" (the two score ~0.81 on each other)
     'card_obtained': (530, 70, 220, 65),  # "Obtained!" over a new card; it closes by itself after ~5 s
     'skip_btn': (540, 600, 200, 100),     # "Skip" over the intro camera, shown for ~3 s as soon as a join has loaded
+    'you_died': (380, 145, 180, 80),      # "You Died" window: the player was killed (the boss's badge goes too)
 }
 TEMPLATES = {name: cv2.imread(os.path.join(HERE, 'templates', name + '.png'))
              for name in TEMPLATE_REGIONS}
@@ -115,7 +119,8 @@ STEPS = collections.deque(maxlen=300)
 _ids = itertools.count(1)
 TRACED_TEMPLATES = {'target_boss': 'ป้าย Boss', 'target_leader': 'ป้าย Leader', 'card_obtained': 'Obtained!',
                     'hunt_btn': 'ปุ่ม Hunt', 'stop_btn': 'ปุ่ม Stop', 'stats_str': 'หน้า Stats',
-                    'dismantle_select_all': 'Select All', 'dismantle_done': 'ย่อยเสร็จ', 'skip_btn': 'ปุ่ม Skip'}
+                    'dismantle_select_all': 'Select All', 'dismantle_done': 'ย่อยเสร็จ', 'skip_btn': 'ปุ่ม Skip',
+                    'you_died': 'You Died'}
 
 
 def note(kind, **data):
@@ -878,6 +883,42 @@ class Game:
             if name:
                 return name
         return ''
+
+    def boss_warning(self, img, skills):
+        """Which of `skills` the boss announces right now, or None. The warning is red text over
+        a busy scene, so only its red pixels are read (plain OCR missed most of them)."""
+        x, y, w, h = BOSS_WARN_RECT
+        band = img[y:y + h, x:x + w].astype(np.int16)
+        b, g, r = band[:, :, 0], band[:, :, 1], band[:, :, 2]
+        red = ((r > 170) & (r - g > 70) & (r - b > 40)).astype(np.uint8) * 255
+        if cv2.countNonZero(red) < 800:
+            return None
+        raw = getattr(self.ocr, 'ocr', self.ocr)     # the mask is a crop: note the real rect below instead
+        text = raw.text(cv2.cvtColor(255 - red, cv2.COLOR_GRAY2BGR), None, 2, 'color').lower()
+        note('read', rect=list(BOSS_WARN_RECT), label='ท่าบอส', text=text[:40])
+        # the skill's last word survives OCR best ("Nagma Bite", "Shelt Fortress")
+        return next((s for s in skills if s.split()[-1].lower() in text), None)
+
+    def respawn_in_town(self, img):
+        """On the "You Died" window, tap "Respawn in town (free)". Only a line read as that
+        button is tapped: the green button right above it costs Robux. True if tapped."""
+        for line in self.ocr.read(img, DIED_BUTTONS_RECT, 1.5, 'gray'):
+            text = line.text.lower()
+            if 'town' in text and 'free' in text and 'robux' not in text:
+                self.tap(line.center, 2)
+                return True
+        return False
+
+    def press(self, key, times=1, gap=0.15):
+        note('key', label=f'{key} ×{times}' if times > 1 else key)
+        for i in range(times):
+            self.dev.key(KEYS[key])
+            if i + 1 < times:
+                time.sleep(gap)
+
+    def hold(self, key, seconds):
+        note('key', label=f'กด {key} ค้าง {seconds:g} วิ')
+        self.dev.hold(KEYS[key], seconds)
 
     def boss_respawn(self, img):
         """Seconds until the boss of this room respawns, from its floating sign, or None.

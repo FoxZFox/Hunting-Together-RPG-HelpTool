@@ -264,7 +264,7 @@ function renderNowBoss(st) {
   else if (current) nextBox.textContent = 'ตัวสุดท้ายในรายการ';
   const kills = st.kills || 0;
   const ran = running ? app.serverNow - st.started_at : 0;
-  $('#f-kills').textContent = `${kills} ตัว`;
+  $('#f-kills').textContent = st.deaths ? `${kills} ตัว · ตาย ${st.deaths}` : `${kills} ตัว`;
   $('#f-per-kill').textContent = kills && ran ? secs(ran / kills) : '–';
   $('#f-hops').textContent = st.timed_hops ? `${st.hops || 0} ครั้ง · ตามเวลา ${st.timed_hops}` : `${st.hops || 0} ครั้ง`;
   $('#f-cards').textContent = `${(st.cards || []).length} ใบ`;
