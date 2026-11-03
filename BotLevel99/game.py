@@ -63,6 +63,7 @@ MONSTER_NAME_RECT = (636, 144, 600, 42)
 MONSTER_TAGS_RECT = (636, 184, 420, 30)
 MONSTER_SPAWN_RECT = (636, 214, 600, 40)
 DISMANTLE_COUNT_RECT = (530, 590, 240, 30)
+DISMANTLE_CANCEL_RECT = (1095, 582, 150, 46)  # "Cancel" in dismantle mode; outside it the same spot is Sell Many
 MONSTER_STATS_RECT = (505, 280, 740, 62)
 MONSTER_CARD_RECT = (580, 600, 420, 26)
 MONSTER_STAT_COLUMNS = {'level': (505, 690), 'hp': (690, 875), 'atk': (875, 1060), 'exp': (1060, 1245)}
@@ -650,9 +651,10 @@ class Game:
             self.to_hud()
         return owned
 
-    def _select_card(self, monster):
+    def _select_card(self, monster, order=()):
         """Tap the card whose "Drops from" names `monster` best ("Saber Tiger" must not
-        settle for "Leader Saber Tiger")."""
+        settle for "Leader Saber Tiger"). When no card's line can be read, `order` (the area's
+        monsters in data/monsters.json order, which is the cards' order) picks it instead."""
         best = (0.0, None)
         for xy in CARD_SLOTS:
             self.tap(xy, 0.7)
@@ -666,18 +668,25 @@ class Game:
             if score > best[0]:
                 best = (score, xy)
         if best[0] < 0.75:
-            return False
+            # an item tooltip from the Bag can stay stuck over "Drops from" (seen 2026-11-04)
+            i = list(order).index(monster) if monster in order else len(CARD_SLOTS)
+            if i >= len(CARD_SLOTS):
+                return False
+            self.log(f'อ่านบรรทัด "Drops from" ไม่ออก (อาจมีป้ายของในกระเป๋าค้างทับ) '
+                     f'เลือกการ์ดใบที่ {i + 1} ตามลำดับมอนในแมพแทน')
+            self.tap(CARD_SLOTS[i], 0.7)
+            return True
         self.tap(best[1], 0.7)
         return True
 
-    def hunt(self, area, monster, known_areas=()):
+    def hunt(self, area, monster, known_areas=(), order=()):
         """Open the Card Book on `monster`'s card and press Hunt this monster.
 
         When that monster is already being hunted the button reads "Stop" instead,
         and pressing it would end the hunt, so then nothing is pressed.
         """
         self.owned = None
-        img = self._open_card(area, monster, known_areas)
+        img = self._open_card(area, monster, known_areas, order)
         if img is None:
             return False
         self.owned = parse_owned(self.ocr.text(img, CARD_OWNED_RECT, 2))
@@ -693,23 +702,41 @@ class Game:
         return self.to_hud()
 
     def stop_hunt(self, area, monster, known_areas=()):
-        """Open the Card Book on `monster`'s card and press Stop, ending Hunt this monster: while
-        a hunt is on, Auto goes for that monster only, even after it is switched off and on.
-        True when the button reads Hunt again (or there was no hunt to stop)."""
-        img = self._open_card(area, monster, known_areas)
-        if img is None:
+        """Press Stop on the hunted card in the Card Book, ending Hunt this monster: while a
+        hunt is on, Auto goes for that monster only, even after it is switched off and on.
+
+        The hunted card is the only one whose button reads Stop, so no card name is read: an
+        item tooltip from the Bag can stay stuck over Card Details and hide "Drops from".
+        The book reopens on the card it showed last, usually that one; otherwise every card
+        of `area` is tried. True when the button reads Hunt again (or no card was hunted)."""
+        step('เปิด Adventure Book')
+        if not self.open_window(KEY_N, 'book', MENU_BOOK):
+            self.log('เปิด Adventure Book ไม่ได้')
             return False
         try:
+            self.tap(BOOK_TAB_CARDS, 1.2)
+            img = self.shot()
+            if not seen(img, 'stop_btn'):
+                step('เลือกแมพ', area)
+                if not self._select_area(area, known_areas):
+                    self.log(f'หาแมพ "{area}" ในหน้า Card Book ไม่เจอ')
+                    return False
+                for xy in CARD_SLOTS:
+                    self.tap(xy, 0.7)
+                    img = self.shot()
+                    if seen(img, 'stop_btn'):
+                        break
+                else:
+                    self.log(f'ไม่มีการ์ดไหนในแมพ {area} ที่ปุ่มเป็น Stop (ไม่ได้ Hunt อยู่)')
+                    return True
             _, xy = find(img, 'stop_btn')
-            if xy is None:
-                return seen(img, 'hunt_btn', 0.7)
             step('กด Stop', monster)
             self.tap(xy, 1.2)
             return seen(self.shot(), 'hunt_btn', 0.7)
         finally:
             self.to_hud()
 
-    def _open_card(self, area, monster, known_areas):
+    def _open_card(self, area, monster, known_areas, order=()):
         """The Card Book open on `monster`'s card: its screenshot, or None (back on the HUD)."""
         step('เปิด Adventure Book')
         if not self.open_window(KEY_N, 'book', MENU_BOOK):
@@ -722,7 +749,7 @@ class Game:
             self.to_hud()
             return None
         step('เลือกการ์ด', monster)
-        if not self._select_card(monster):
+        if not self._select_card(monster, order):
             self.log(f'หาการ์ดของ "{monster}" ในแมพ {area} ไม่เจอ')
             self.to_hud()
             return None
@@ -786,13 +813,13 @@ class Game:
         self.tap(DISMANTLE_MODE, 1.2)
         if not seen(self.shot(), 'dismantle_select_all'):
             self.log('ไม่เจอปุ่ม Select All ในโหมดย่อยของ ข้ามการย่อย')
-            self.tap(DISMANTLE_CANCEL, 1.0)
+            self._cancel_dismantle()
             return False
         self.tap(DISMANTLE_SELECT_ALL, 1.2)
         count = number(self.ocr.text(self.shot(), DISMANTLE_COUNT_RECT, 2.5))
         if not count:
             self.log('ไม่มีของให้ย่อย')
-            self.tap(DISMANTLE_CANCEL, 1.0)
+            self._cancel_dismantle()
             return True
         # the confirm state times out after a second or two, so the two presses go back to back
         self.tap(DISMANTLE_GO, 0.6)
@@ -806,7 +833,17 @@ class Game:
                 self.log(f'ย่อยของ {count} ชิ้น')
                 return True
         self.log('กด Dismantle แล้วแต่ไม่เห็นหน้าต่าง Dismantle Complete')
-        self.tap(DISMANTLE_CANCEL, 1.0)
+        self._cancel_dismantle()
+        return False
+
+    def _cancel_dismantle(self):
+        """Leave dismantle mode with its Cancel button, but only when the button there reads
+        Cancel: outside dismantle mode the same spot is Sell Many, which the bot never presses."""
+        text = self.ocr.text(self.shot(), DISMANTLE_CANCEL_RECT, 2, 'white')
+        if 'cancel' in text.lower():
+            self.tap(DISMANTLE_CANCEL, 1.0)
+            return True
+        self.log(f'ปุ่มตรง Cancel เขียนว่า "{text}" ไม่ใช่ Cancel เลยไม่กด')
         return False
 
     def _read_job(self):

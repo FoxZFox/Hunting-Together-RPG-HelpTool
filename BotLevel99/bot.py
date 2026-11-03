@@ -143,6 +143,10 @@ class Bot:
                     best = (score, (a['name'], m['name']))
         return best[1] if best[0] >= 0.8 else None
 
+    def card_order(self, area):
+        """The area's monsters in data/monsters.json order, which is its cards' order in the Card Book."""
+        return next(([m['name'] for m in a['monsters']] for a in self.areas if a['name'] == area), [])
+
     def target_for(self, level):
         for step in self.cfg.get('plan', []):
             if step['from'] <= level <= step['to']:
@@ -428,7 +432,7 @@ class Bot:
                     continue
                 if want != target:
                     log(f'ไปตี {want[1]} ที่ {want[0]}')
-                    if g.hunt(*want, known_areas=self.area_names):
+                    if g.hunt(*want, known_areas=self.area_names, order=self.card_order(want[0])):
                         target, progress_at, hunt_fails = want, time.time(), 0
                         st['target'] = list(want)
                         st['hunts'] += 1
@@ -539,7 +543,7 @@ class Bot:
                     continue
                 if st['target'] != list(want):
                     log(f'ไปตีบอส {want[1]} ที่ {want[0]}')
-                if not g.hunt(*want, known_areas=self.area_names):
+                if not g.hunt(*want, known_areas=self.area_names, order=self.card_order(want[0])):
                     hunt_fails += 1
                     if hunt_fails >= 3:
                         hunt_fails = 0
