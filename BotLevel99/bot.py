@@ -25,7 +25,7 @@ import winsound
 import cv2
 
 from device import Device, DeviceError
-from game import Game, app_page, find, screen_state, seen, similar, step, target_kind
+from game import KEYS, Game, app_page, find, note, screen_state, seen, similar, step, target_hp, target_kind
 from ocr import Ocr
 from servers import Servers
 
@@ -112,6 +112,20 @@ class Bot:
     def wait(self, seconds):
         """Sleep, but wake up at once when the bot is asked to stop. True if stopping."""
         return self.stop_event.wait(seconds)
+
+    def idle(self, seconds, press_e):
+        """wait(), pressing E every press_e_every_s seconds meanwhile when `press_e`: E opens a
+        Hard Worker Box the character stands next to while it farms."""
+        every = self.cfg['bot'].get('press_e_every_s', 1)
+        if not press_e or not every:
+            return self.wait(seconds)
+        note('key', label=f'E ทุก {every} วิ')
+        end = time.time() + seconds
+        while (left := end - time.time()) > 0:
+            self.dev.key(KEYS['E'])
+            if self.wait(min(every, left)):
+                return True
+        return False
 
     # ---- plan -----------------------------------------------------------
     def find_monster(self, monster, area=None):
@@ -462,7 +476,8 @@ class Bot:
                     continue
 
                 step('ตีมอนอยู่', want[1])
-                self.wait(3 if retarget else bot['check_every_s'])     # look often while walking there
+                # E only while a monster's HP bar shows (at the farm): in town it could open an NPC
+                self.idle(3 if retarget else bot['check_every_s'], target_hp(img) > 0)
             except DeviceError as e:
                 self.failures += 1
                 log(f'adb มีปัญหา (ครั้งที่ {self.failures}): {e}')

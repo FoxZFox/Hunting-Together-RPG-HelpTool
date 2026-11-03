@@ -34,6 +34,7 @@ SETTINGS = {  # [bot] keys the panel may change: key -> (type, min, max)
     'stall_minutes': (int, 1, 60),
     'dismantle': (bool, None, None),
     'auto_all_after_hunt': (bool, None, None),
+    'press_e_every_s': (int, 0, 60),
 }
 
 
