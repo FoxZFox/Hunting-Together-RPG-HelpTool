@@ -90,10 +90,10 @@ class Servers:
             del self.respawn[key]
         return sorted(at - now for (sid, b), at in self.respawn.items() if b == boss and at > now - late)
 
-    def due(self, boss, early=15, late=10):
-        """(server, seconds until its boss respawns) for a known server whose `boss` respawns about
-        when we would be watching it: up to `early` s after we get there (we wait for it) or `late`
-        s before (a camper may have it already, but often not). None when there is none."""
+    def due(self, boss, early=15, late=2):
+        """(server, seconds until its boss respawns) for a known server whose `boss` respawns just
+        after we would be watching it (up to `early` s; we wait for it there). Arriving later is not
+        worth it: a server with someone camping its boss had it dead within 3 s of the spawn."""
         now = time.time()
         best = None
         for srv in self.fetch():
