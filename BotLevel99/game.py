@@ -71,6 +71,9 @@ BAG_TITLE_RECT = (150, 132, 190, 30)      # "Lv.31 Merchant" above the character
 BOSS_TIMER_RECT = (280, 60, 720, 260)     # floating "Respawns in 9:58" sign over a dead boss; moves with the camera
 BOSS_WARN_RECT = (280, 95, 720, 45)       # red "<boss> uses <skill> — get out of the red ground!" under the boss bar
 DIED_BUTTONS_RECT = (400, 290, 480, 130)  # You Died: green "Respawn here • 9 Robux" (never!) over blue "Respawn in town (free)"
+TARGET_NAME_RECT = (440, 8, 420, 34)      # name of the monster being fought, over its HP bar (gone when Auto is off)
+TARGET_HP_RECT = (512, 50, 256, 24)       # that monster's HP bar
+AUTO_SWORD_RECT = (1150, 598, 95, 80)     # the Auto battle sword, bottom right (key F): green = on, white = off
 CARD_NAME_RECT = (520, 166, 240, 30)      # name at the top of the card in the "Obtained!" popup
 CARD_OWNED_RECT = (940, 420, 305, 26)     # Card Book > Card Details: "Owned  None yet" / "Owned  2 cards"
 ROBLOX_LEAVE_RECT = (63, 198, 380, 60)
@@ -174,6 +177,28 @@ def find(img, name, threshold=0.82, scales=(1.0,), region=None):
 
 def seen(img, name, threshold=0.82, region=None):
     return find(img, name, threshold, region=region)[1] is not None
+
+
+def auto_battle(img):
+    """True / False when the Auto battle sword is green (on) / white (off), None when it cannot
+    be seen. On 2026-11-04: on = ~1,670 green px and ~90 white, off = 0 green and ~1,500 white."""
+    x, y, w, h = AUTO_SWORD_RECT
+    band = img[y:y + h, x:x + w].astype(np.int16)
+    b, g, r = band[:, :, 0], band[:, :, 1], band[:, :, 2]
+    green = int(((g > 150) & (g - r > 60) & (g - b > 60)).sum())
+    white = int(((r > 215) & (g > 215) & (b > 215)).sum())
+    if max(green, white) < 600:
+        return None
+    return green > white
+
+
+def target_hp(img):
+    """Roughly how much of the fought monster's HP bar is red (0 when there is no bar)."""
+    x, y, w, h = TARGET_HP_RECT
+    band = img[y:y + h, x:x + w].astype(np.int16)
+    b, g, r = band[:, :, 0], band[:, :, 1], band[:, :, 2]
+    red = (r > 150) & (g < 100) & (b < 100)
+    return float((red.mean(axis=0) > 0.3).mean())
 
 
 def app_page(img):
@@ -412,7 +437,7 @@ def plan_stats(current, points, rows):
 RECT_LABELS = {LEVEL_RECT: 'เลเวล', BOSS_TIMER_RECT: 'เวลาเกิดบอส', CARD_NAME_RECT: 'ชื่อการ์ด',
                CARD_OWNED_RECT: 'Owned', AREA_LIST_RECT: 'รายชื่อแมพ', CARD_DROPS_RECT: 'Drops from',
                POINTS_LEFT_RECT: 'แต้มเหลือ', ROBLOX_LEAVE_RECT: 'ปุ่ม Leave', ROBLOX_CONFIRM_RECT: 'ยืนยัน Leave',
-               BAG_TITLE_RECT: 'อาชีพ', DISMANTLE_COUNT_RECT: 'จำนวนที่ย่อย'}
+               BAG_TITLE_RECT: 'อาชีพ', DISMANTLE_COUNT_RECT: 'จำนวนที่ย่อย', TARGET_NAME_RECT: 'มอนที่ตีอยู่'}
 
 
 class TracedOcr:
@@ -462,7 +487,7 @@ class Game:
         time.sleep(wait)
 
     def key(self, code):
-        note('key', label={KEY_B: 'B', KEY_N: 'N'}.get(code, str(code)))
+        note('key', label={KEY_B: 'B', KEY_N: 'N', KEY_O: 'O', **{v: k for k, v in KEYS.items()}}.get(code, str(code)))
         self.dev.key(code)
 
     def swipe(self, a, b, ms=700):
@@ -679,6 +704,41 @@ class Game:
         step('กด Hunt', monster)
         self.tap(HUNT_BTN, 1.5)
         return self.to_hud()
+
+    def fighting(self, monster, looks=5):
+        """True when the target bar names `monster` and its HP bar moves within a few looks
+        (~3 s): we are hitting it, not still walking towards it. Kills are quick, so a fresh
+        monster's bar can sit full for 2-3 s before the first hit lands."""
+        named, hps = False, set()
+        for _ in range(looks):
+            img = self.shot()
+            if not named:
+                name = self.ocr.text(img, TARGET_NAME_RECT, 2, 'white')
+                named = monster.lower() in name.lower() or similar(name, monster) >= 0.8
+            hp = round(target_hp(img), 2)
+            if hp:                              # 0 = no bar in this shot
+                hps.add(hp)
+            if named and len(hps) > 1:
+                return True
+            time.sleep(0.5)
+        return False
+
+    def auto_all(self):
+        """Auto battle off and on again (key F twice). After Hunt this monster, Auto only goes
+        for that one monster; switched on afresh it fights every monster around. True when
+        Auto ends up on."""
+        state = auto_battle(self.shot())
+        if state is None:
+            return False
+        for want in ([False] if state else []) + [True]:
+            for _ in range(2):                  # a key press now and then does not register
+                self.key(KEYS['F'])
+                time.sleep(1.0)
+                if auto_battle(self.shot()) == want:
+                    break
+            else:
+                return False
+        return True
 
     # ---- Bag -> Auto Gear / Auto Card -----------------------------------
     def auto_equip(self, dismantle=False):

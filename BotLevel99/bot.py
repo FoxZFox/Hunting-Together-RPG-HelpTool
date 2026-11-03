@@ -325,6 +325,7 @@ class Bot:
         st = self.status
         level = pending = None
         target = None
+        retarget = None                 # (monster, when Hunt was pressed) until Auto is switched off and on
         progress_key, progress_at = None, time.time()
         stalls = hunt_fails = 0
         last_gear, gear_due = 0.0, True
@@ -413,6 +414,7 @@ class Bot:
                         target, progress_at, hunt_fails = want, time.time(), 0
                         st['target'] = list(want)
                         st['hunts'] += 1
+                        retarget = (want[1], time.time()) if bot.get('auto_all_after_hunt', True) else None
                     else:
                         hunt_fails += 1
                         log(f'กด Hunt ไม่สำเร็จ (ครั้งที่ {hunt_fails}) {save_screen(g.shot(), "hunt-failed")}')
@@ -433,6 +435,20 @@ class Bot:
                     target, progress_at = None, time.time()
                     continue
 
+                # Hunt this monster makes Auto go for that one monster only; once we are there,
+                # Auto off and on again (F twice) makes it fight every monster around
+                if retarget:
+                    name, since = retarget
+                    if g.fighting(name):
+                        retarget = None
+                        step('ปิดแล้วเปิด Auto', name)
+                        log('ถึงที่ฟาร์มแล้ว ปิดแล้วเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัวแถวนั้น' if g.auto_all()
+                            else f'ปิดแล้วเปิด Auto ไม่สำเร็จ ({save_screen(g.shot(), "auto-toggle")})')
+                        continue
+                    if now - since > 180:
+                        log(f'กด Hunt แล้ว 3 นาทียังไม่เห็นว่ากำลังตี {name} เลยไม่ได้ปิดแล้วเปิด Auto')
+                        retarget = None
+
                 if gear_due or now - last_gear > bot['auto_gear_minutes'] * 60:
                     log('กด Auto Gear + Auto Card' + (' แล้วย่อยของ' if bot['dismantle'] else ''))
                     g.auto_equip(bot['dismantle'])
@@ -446,7 +462,7 @@ class Bot:
                     continue
 
                 step('ตีมอนอยู่', want[1])
-                self.wait(bot['check_every_s'])
+                self.wait(3 if retarget else bot['check_every_s'])     # look often while walking there
             except DeviceError as e:
                 self.failures += 1
                 log(f'adb มีปัญหา (ครั้งที่ {self.failures}): {e}')

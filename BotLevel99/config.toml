@@ -38,12 +38,13 @@ plan = [
 ]
 
 [bot]
-mode = "boss"            # ปุ่มเริ่มบอทในหน้าควบคุมทำอะไร: "level" เก็บเลเวล, "boss" ล่าบอส
+mode = "level"            # ปุ่มเริ่มบอทในหน้าควบคุมทำอะไร: "level" เก็บเลเวล, "boss" ล่าบอส
 stop_level = 99          # ถึงเลเวลนี้แล้วหยุดและส่งเสียงเตือน
 check_every_s = 15       # เช็คหน้าจอทุกกี่วินาที
 stall_minutes = 3        # EXP ไม่ขยับนานเท่านี้ = กด Hunt ใหม่ (ค้างครบ 3 รอบติดกัน = เข้าเกมใหม่)
 auto_gear_minutes = 15   # กด Auto Gear + Auto Card ทุกกี่นาที (และทุกครั้งที่เลเวลอัพ)
 dismantle = true         # หลัง Auto Gear/Card ให้ย่อยของที่เหลือ (ค้อน > Select All > Dismantle 2 ครั้ง)
+auto_all_after_hunt = true  # กด Hunt แล้วเดินถึงที่ฟาร์ม ปิดแล้วเปิด Auto ใหม่ (F 2 ครั้ง) ให้ตีทุกตัว ไม่ใช่แค่ตัวที่ Hunt
 unknown_timeout_s = 60   # เจอหน้าจอที่ไม่รู้จักนานเท่านี้ = ลองปิด/เข้าเกมใหม่
 restart_after_failures = 3  # LDPlayer ไม่ตอบ/เข้าเกมไม่ได้ติดกันกี่รอบ ถึงจะปิดแล้วเปิด LDPlayer ใหม่
 join_url = "roblox://placeId=117483759937632"
