@@ -75,6 +75,7 @@ ELEMENTS =('Neutral', 'Fire', 'Water', 'Wind', 'Earth', 'Holy', 'Shadow', 'Ghost
 # Game keys (Linux key codes, sent through the emulator's keyboard device)
 KEY_B = 48                                # Bag
 KEY_N = 49                                # Adventure Book (opens on Card Book)
+KEY_O = 24                                # Roblox camera: zoom out one step
 
 # Template name -> region where it is looked for (x, y, w, h)
 TEMPLATE_REGIONS = {
@@ -455,10 +456,13 @@ class Game:
         note('swipe', a=list(a), b=list(b))
         self.dev.swipe(*a, *b, ms)
 
-    def zoom_out(self, clicks):
-        """Zoom the camera out with the emulator's mouse wheel (more of the room on screen)."""
-        note('key', label=f'ซูมออก ×{clicks}')
-        self.dev.wheel(-clicks)
+    def zoom_out(self, presses):
+        """Zoom the camera out with Roblox's O key, sent like B/N so it works while LDPlayer is not
+        the focused window (the mouse wheel did not). About 10 presses show a boss's respawn sign."""
+        note('key', label=f'O ×{presses}')
+        for _ in range(presses):
+            self.dev.key(KEY_O)
+            time.sleep(0.12)
 
     def wait_state(self, want, timeout=8.0):
         want = (want,) if isinstance(want, str) else want
@@ -844,8 +848,13 @@ class Game:
 
     def boss_respawn(self, img):
         """Seconds until the boss of this room respawns, from its floating sign, or None.
-        One read at x1.5 got 22/22 test frames right (x1.0 got 16, 'white' 5)."""
-        return parse_respawn(' | '.join(l.text for l in self.ocr.read(img, BOSS_TIMER_RECT, 1.5, 'gray')))
+        x1.5 reads it best, but now and then splits "Respawns in" from "0:06": then x2 once more
+        (a frame without the sign has no time in it, so it costs nothing there)."""
+        text = ' | '.join(l.text for l in self.ocr.read(img, BOSS_TIMER_RECT, 1.5, 'gray'))
+        left = parse_respawn(text)
+        if left is None and re.search(r'\d\s*[:.;]\s*\d\d', text):
+            left = parse_respawn(' | '.join(l.text for l in self.ocr.read(img, BOSS_TIMER_RECT, 2.0, 'gray')))
+        return left
 
     def _save(self, tag):
         from bot import save_screen     # bot imports game, so this import waits until it is needed

@@ -656,7 +656,7 @@ function fillBoss() {
   form.elements.appear_s.value = cfg.appear_s ?? 6;
   form.elements.wait_respawn_s.value = cfg.wait_respawn_s ?? 0;
   form.elements.after_kill_s.value = cfg.after_kill_s ?? 2;
-  form.elements.zoom_out_clicks.value = cfg.zoom_out_clicks ?? 3;
+  form.elements.zoom_out_clicks.value = cfg.zoom_out_clicks ?? 10;
   form.elements.until_card.checked = cfg.until_card ?? true;
   form.elements.server_pick.value = cfg.server_pick || 'fewest';
   form.elements.server_cooldown_min.value = cfg.server_cooldown_min ?? 12;

@@ -226,7 +226,7 @@ class Bot:
                             g.close_any()
                     continue
                 log('เข้าเกมแล้ว')
-                clicks = self.cfg.get('boss', {}).get('zoom_out_clicks', 3)
+                clicks = self.cfg.get('boss', {}).get('zoom_out_clicks', 10)
                 if self.status.get('mode') == 'boss' and clicks:
                     g.zoom_out(clicks)
                 return True
