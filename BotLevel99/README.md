@@ -28,12 +28,45 @@
 
 ให้เปิด Auto Upgrade ทั้งสองอันไว้ก่อนรันบอท
 
-## ก่อนใช้
+## สิ่งที่ต้องมี (Requirements)
 
-- LDPlayer ต้องตั้งความละเอียดไว้ที่ **1280x720 แนวนอน** (ตั้งไว้ให้แล้ว) เพราะบอทจำตำแหน่งปุ่มตามความละเอียดนี้
-- อย่าย่อหน้าต่าง LDPlayer ลงไปที่ taskbar (ให้หน้าต่างอื่นบังได้)
-- ต้องมี Python 3.11 ขึ้นไป (จาก https://www.python.org/downloads/ ตอนติดตั้งติ๊ก Add python.exe to PATH) ส่วน library ไม่ต้องลงเอง `run.bat` จัดการให้
-- OCR ใช้ตัวอ่านภาษาอังกฤษที่มากับ Windows (en-US) ไม่ต้องลงอะไรเพิ่ม
+ทดสอบบน Windows 10 Pro, Python 3.13, LDPlayer 9
+
+**เครื่อง**
+
+| ต้องมี | รายละเอียด |
+| --- | --- |
+| Windows 10 หรือ 11 | บอทใช้ตัวอ่านตัวหนังสือ (OCR) กับ PowerShell 5.1 ที่มากับ Windows |
+| ภาษา English (United States) ใน Windows | OCR อ่านเกมด้วยตัวอ่านภาษาอังกฤษของ Windows ถ้า Windows มีแต่ภาษาไทย ให้เพิ่มที่ Settings > Time & Language > Language > Add a language > English (United States) เช็คได้ด้วยคำสั่งข้างล่าง |
+| Python 3.11 ขึ้นไป | ติดตั้งจาก https://www.python.org/downloads/ ตอนติดตั้งติ๊ก **Add python.exe to PATH** ส่วน library (`opencv-python`, `numpy` ตาม `requirements.txt`) `run.bat` ลงให้เองใน `.venv` |
+| อินเทอร์เน็ต | เล่น Roblox และดึงรายชื่อห้องของเกม (โหมดล่าบอส) |
+
+เช็คว่า Windows มีตัวอ่านภาษาอังกฤษหรือยัง (เปิด PowerShell แล้ววาง) ถ้าผลมี `en-US` ก็ใช้ได้:
+
+```powershell
+[Windows.Media.Ocr.OcrEngine,Windows.Foundation,ContentType=WindowsRuntime] | Out-Null; [Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages | % LanguageTag
+```
+
+**LDPlayer 9**
+
+| ต้องมี | รายละเอียด |
+| --- | --- |
+| ติดตั้งที่ `C:\LDPlayer\LDPlayer9` | ถ้าติดตั้งที่อื่น แก้ `dir` ในหมวด `[ldplayer]` ของ `config.toml` บอทใช้ instance แรก (`index = 0`, `serial = "emulator-5554"`) |
+| ความละเอียด **1280x720 แนวนอน**, DPI 240 | จำเป็น บอทจำตำแหน่งปุ่มตามความละเอียดนี้ (Settings > Advanced settings > Resolution: Tablet 1280x720) |
+| ADB debugging เปิดอยู่ | Settings > Other settings > ADB debugging = **Open local connection** บอทคุมเกมผ่าน adb ทั้งหมด |
+| แนะนำ CPU 4, RAM 6 GB, 30 fps | ค่าที่ใช้ทดสอบ |
+| หน้าต่างไม่ถูกย่อลง taskbar | ให้หน้าต่างอื่นบังได้ ไม่ต้องคลิกให้โฟกัส |
+
+**Roblox ใน LDPlayer**
+
+| ต้องมี | รายละเอียด |
+| --- | --- |
+| แอป Roblox ล็อกอินไว้แล้ว | บอทเข้าเกมด้วยลิงก์ `roblox://placeId=117483759937632` |
+| เกม Hunting Together RPG ใช้ภาษาอังกฤษ | บอทอ่านชื่อแมพ มอน การ์ด และเลเวลเป็นภาษาอังกฤษ |
+| ปุ่มคีย์บอร์ดของเกมเป็นค่าเดิม | B = กระเป๋า, N = Adventure Book, O = ซูมกล้องออก, F = ตีอัตโนมัติ |
+| ตารางอัพ Stats ของอาชีพที่เล่น | ถ้าอยากให้บอทอัพ Stats (ไม่มีตาราง บอทไม่แตะหน้า Stats) |
+
+ระหว่างบอททำงานแนะนำให้เอาเมาส์ออกจากหน้าต่าง LDPlayer เพราะตัวชี้เมาส์ติดไปในภาพที่บอทเห็น
 
 ## วิธีใช้
 

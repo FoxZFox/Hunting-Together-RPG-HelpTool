@@ -7,6 +7,15 @@ Chrome extension สำหรับเลือกห้อง (server) ขอ�
 
 แผงควบคุมจะแสดง **เฉพาะในหน้าเกมนี้เท่านั้น** หน้าอื่นของ Roblox จะไม่มีอะไรขึ้น และไอคอน extension จะเป็นสีเทา
 
+## สิ่งที่ต้องมี (Requirements)
+
+| ต้องมี | รายละเอียด |
+| --- | --- |
+| Google Chrome (หรือเบราว์เซอร์ตระกูล Chromium ที่ลงส่วนเสริมแบบ unpacked ได้ เช่น Edge) | ส่วนเสริมนี้เป็น Manifest V3 ใช้สิทธิ์แค่ `storage` กับ `declarativeContent` |
+| ล็อกอิน roblox.com ในเบราว์เซอร์นั้น | ใช้ปุ่มเข้าเกมของหน้าเว็บ Roblox |
+| Roblox Player ติดตั้งบน PC | ตอนกดเข้าห้อง เบราว์เซอร์จะเปิด Roblox ผ่านลิงก์ `roblox://` |
+| LDPlayer 9 (เฉพาะมาโคร) | `ldplayer/PressE.record` นำเข้าในตัวบันทึกการกดของ LDPlayer (Operation Recorder) ใช้กดปุ่ม E ครั้งเดียวโดยไม่ขยับเมาส์ |
+
 ## ติดตั้ง
 
 1. เปิด `chrome://extensions`
