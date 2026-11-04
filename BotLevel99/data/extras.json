@@ -1,8 +1,10 @@
 {
- "read": "2026-11-04, Status & Skills > Skills > Extra slot > Choose a Passive (on a Lv.99 Thief)",
+ "read": "2026-11-04, Status & Skills > Skills > Extra slot > Choose a Passive: on a Lv.99 Thief, plus the three Thief passives from the user's screenshot of a Samurai's chooser",
  "notes": [
-  "an Extra passive of another class needs that class at Lv.99 ('needs' below; empty = already unlocked on this account)",
-  "class-only passives cannot go in an Extra slot"
+  "an Extra passive of another class needs that class at Lv.99 (config [build] classes_99)",
+  "a class never gets its own passives in an Extra slot: the Thief's chooser lists no Thief passives, a Samurai's no Samurai ones",
+  "class_only passives cannot go in anyone's Extra slot",
+  "Extra slots open at Lv.70, 76, 82, 88, 94 and 99 (seen on a Samurai)"
  ],
  "extras": [
   {"name": "Far Horizon", "class": "Archer", "effect": "Bow: longer attack range and damage +10%", "limit": "bow only (Archer)"},
@@ -10,17 +12,20 @@
   {"name": "Blade Training", "class": "Swordsman", "effect": "Melee weapon: ATK +20%, attack speed +10%, +10% damage to stunned/burning enemies", "limit": "melee weapons only"},
   {"name": "Second Wind", "class": "Swordsman", "effect": "HP regen +100%, HP potions +50% stronger, SP regen +5"},
   {"name": "Steel Skin", "class": "Swordsman", "effect": "VIT +10, max HP +10%"},
-  {"name": "Brewer's Wisdom", "class": "Alchemist", "effect": "MATK +15%", "limit": "only helps magic attacks", "needs": "Alchemist Lv.99"},
-  {"name": "Nimble Toss", "class": "Alchemist", "effect": "Attack speed +20% (every class); MATK + 20% of AGI (magic only)", "needs": "Alchemist Lv.99"},
-  {"name": "Potion Expert", "class": "Alchemist", "effect": "HP potions heal +30%; flask attacks can land Magic Crits", "limit": "Alchemist only, cannot go in an Extra slot"},
-  {"name": "Devotion", "class": "Cleric", "effect": "DEF +20, MDEF +20, ATK and MATK +20%", "needs": "Cleric Lv.99"},
-  {"name": "Arcane Mind", "class": "Mage", "effect": "INT +10, MATK +20%, Max SP +10%", "needs": "Mage Lv.99"},
-  {"name": "Deep Focus", "class": "Mage", "effect": "SP regen +5, skills cost 20% less SP", "needs": "Mage Lv.99"},
-  {"name": "Bargain", "class": "Merchant", "effect": "Shop prices 20% cheaper", "needs": "Merchant Lv.99"},
-  {"name": "Heavy Lifter", "class": "Merchant", "effect": "STR +10, ATK +20%, Bag slots +20", "needs": "Merchant Lv.99"},
-  {"name": "Sales Talk", "class": "Merchant", "effect": "Sell items to shops for 20% more", "needs": "Merchant Lv.99"},
-  {"name": "Katana Mastery", "class": "Samurai", "effect": "Katana: ATK +15%, CRIT +20", "limit": "Samurai only, cannot go in an Extra slot"},
-  {"name": "Lingering Edge", "class": "Samurai", "effect": "Crit DMG +10%, ATK + 15% of your AGI", "needs": "Samurai Lv.99"},
-  {"name": "Swift Step", "class": "Samurai", "effect": "Evasion +15, Attack Speed +15%", "needs": "Samurai Lv.99"}
+  {"name": "Brewer's Wisdom", "class": "Alchemist", "effect": "MATK +15%", "limit": "only helps magic attacks"},
+  {"name": "Nimble Toss", "class": "Alchemist", "effect": "Attack speed +20% (every class); MATK + 20% of AGI (magic only)"},
+  {"name": "Potion Expert", "class": "Alchemist", "effect": "HP potions heal +30%; flask attacks can land Magic Crits", "limit": "Alchemist only, cannot go in an Extra slot", "class_only": true},
+  {"name": "Devotion", "class": "Cleric", "effect": "DEF +20, MDEF +20, ATK and MATK +20%"},
+  {"name": "Arcane Mind", "class": "Mage", "effect": "INT +10, MATK +20%, Max SP +10%"},
+  {"name": "Deep Focus", "class": "Mage", "effect": "SP regen +5, skills cost 20% less SP"},
+  {"name": "Bargain", "class": "Merchant", "effect": "Shop prices 20% cheaper"},
+  {"name": "Heavy Lifter", "class": "Merchant", "effect": "STR +10, ATK +20%, Bag slots +20"},
+  {"name": "Sales Talk", "class": "Merchant", "effect": "Sell items to shops for 20% more"},
+  {"name": "Double Hit", "class": "Thief", "effect": "Melee weapon: 50% chance to double-strike on normal attacks", "limit": "melee weapons only"},
+  {"name": "Killer Instinct", "class": "Thief", "effect": "Crit DMG +20%, attack speed +10%, ATK +20%"},
+  {"name": "Light Step", "class": "Thief", "effect": "Evasion +20, Move Speed +15%"},
+  {"name": "Katana Mastery", "class": "Samurai", "effect": "Katana: ATK +15%, CRIT +20", "limit": "Samurai only, cannot go in an Extra slot", "class_only": true},
+  {"name": "Lingering Edge", "class": "Samurai", "effect": "Crit DMG +10%, ATK + 15% of your AGI"},
+  {"name": "Swift Step", "class": "Samurai", "effect": "Evasion +15, Attack Speed +15%"}
  ]
 }

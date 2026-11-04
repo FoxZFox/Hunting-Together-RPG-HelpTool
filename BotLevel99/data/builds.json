@@ -59,5 +59,66 @@
    "Ice Golem": "LUK +5"
   },
   "sets": "เก็บการ์ดให้ครบแมพได้โบนัสถาวรโดยไม่ต้องใส่: Hellhound Ash Fields (ATK +1%, STR +3), Tiger Thicket (Attack Speed +1%, AGI +2), Scorpion Dunes (CRIT +1, LUK +2), Hyena Den (CRIT +1)"
+ },
+ "Samurai": {
+  "summary": "Samurai สายดาบ ตีเร็วใกล้ ASPD 190 แล้วอัด Crit กับ ATK ไม่ลง VIT · ช่อง Extra ใส่ได้แค่ของอาชีพอื่น (Katana Mastery, Lingering Edge, Swift Step เป็นของ Samurai เอง ใส่ไม่ได้)",
+  "assumes": [
+   "วัดจากหน้า Stats ตอน Lv.81 (ใส่ชุด SetGale 5/5 + Killer Instinct): ATK 1,001, ASPD 189 (ตี 4.5 ครั้ง/วิ), Crit 78%, Crit DMG +90% ตอนนั้นมีไอคอน Haste กับ Mirror Mind ขึ้นอยู่",
+   "AGI 85 → 87 แล้ว ASPD ไม่ขยับ (ขึ้นไม่ถึง 0.25) AGI ต่อจากนี้เลยแทบไม่ช่วยตีเร็วขึ้น ได้แค่ ATK +0.15 ต่อแต้มจาก Lingering Edge ตารางเลยหยุด AGI ที่ 87",
+   "ถ้ายังไม่ถึง 190 ใช้ของที่ถูกกว่าลงแต้ม: Extra Blade Training (Attack Speed +10%), การ์ด Whitefang (Attack Speed +8%) หรือ Nimble Toss (+20%)",
+   "Samurai: STR 1 แต้ม = ATK +1 (วัดตอน Lv.54) การ์ด ATK ตัวเลขกับ ATK% เลยคุ้มกว่าการ์ด STR (ต่างจาก Thief)",
+   "Mirror Mind (CRIT +15, Crit DMG +15%) ติด 50 วิ คูลดาวน์ 40 วิ เปิด Auto ไว้ก็ติดเกือบตลอด Crit เลยจะเต็ม 100% ราว LUK 53 หลังจากนั้นลง STR",
+   "ช่อง Extra ปลดที่ Lv.70, 76, 82, 88, 94, 99 ไม่นับของสวมใส่ ตัวเลขดาเมจเป็นค่าประมาณ"
+  ],
+  "stats": {
+   "now": {"STR": 50, "AGI": 87, "LUK": 45, "DEX": 27, "note": "ตารางตอน Lv.85: หยุด AGI ที่ 87 แล้วลง LUK ก่อน (Crit 78% → ราว 82%)"},
+   "full": {"STR": 81, "AGI": 87, "LUK": 55, "DEX": 27, "note": "Lv.99 ใช้แต้ม 1,243 จาก 1,244: LUK ถึง 53 ก่อน (Crit เต็มตอน Mirror Mind ติด) ที่เหลือลง STR"}
+  },
+  "extras": [
+   {"name": "Killer Instinct", "why": "Crit DMG +20%, ATK +20%, Attack Speed +10% ดีสุดสำหรับสาย Crit"},
+   {"name": "Double Hit", "why": "ตีปกติมีโอกาส 50% ตีซ้ำ (อาวุธประชิด ดาบใช้ได้) ไม่รวมสกิล ถ้าดาเมจส่วนใหญ่มาจากตีปกติจะคุ้มกว่า Blade Training"},
+   {"name": "Blade Training", "why": "ATK +20%, Attack Speed +10% (ช่วยดัน 189 → 190) และดาเมจ +10% ใส่ศัตรูที่ติดสตันจาก Counter Stance"},
+   {"name": "Hunter's Focus", "why": "ATK +20%, DEX +10"},
+   {"name": "Heavy Lifter", "why": "ATK +20%, STR +10 และกระเป๋า +20 ช่อง"},
+   {"name": "Devotion", "why": "ATK +20% พร้อม DEF/MDEF +20"},
+   {"name": "Nimble Toss", "why": "Attack Speed +20% ใช้เมื่อ ASPD ยังไม่ถึง 190"},
+   {"name": "Light Step", "why": "Evasion +20, วิ่งเร็วขึ้น 15% ไม่เพิ่มดาเมจ"},
+   {"name": "Second Wind", "why": "ฟื้น HP เร็วขึ้น 100% ยา HP แรงขึ้น 50%"},
+   {"name": "Steel Skin", "why": "VIT +10, Max HP +10% ไม่เพิ่มดาเมจ แต่ทนขึ้น"}
+  ],
+  "cards": [
+   {"monster": "Volcano Turtle King", "why": "ATK +33, STR +10 และเจาะ DEF 10%", "gain": "+7–8%"},
+   {"monster": "Leader Obsidian Hellhound", "why": "ATK +9%", "gain": "+5–6%"},
+   {"monster": "Leader Blue-Eyed Wolf", "why": "ATK +38", "gain": "+5–6%"},
+   {"monster": "Obsidian Pharaoh", "why": "ATK +35 และ Cast Speed +10%", "gain": "+5%"},
+   {"monster": "Tempest Dragon King", "why": "ATK +30 และคูลดาวน์ −10% (Mirror Mind, Counter Stance บ่อยขึ้น)", "gain": "+4–5%"},
+   {"monster": "Ash Hellhound", "why": "ATK +30", "gain": "+4%"},
+   {"monster": "Whitefang Sabertooth", "why": "ATK +25, Attack Speed +8% ดัน ASPD ถึง 190 ได้โดยไม่ต้องลง AGI", "gain": "+4% และ ASPD"},
+   {"monster": "Leader Spiked Stone Golem", "why": "ATK +6%", "gain": "+3–4%"},
+   {"monster": "Leader Iron Horn Rhino", "why": "Crit Rate +5% (เท่ากับ LUK ราว 15)", "gain": "+2–3%"},
+   {"monster": "Gorilla King", "why": "ATK +12, STR +5 พร้อม Max HP +6% และรับดาเมจน้อยลง 5%", "gain": "+2–3%"},
+   {"monster": "Hellhound Alpha", "why": "STR +12 (Samurai ได้ ATK +1 ต่อ STR)", "gain": "+1–2%"},
+   {"monster": "Scorpion King", "why": "LUK +8", "gain": "+1–2%"}
+  ],
+  "cards_now": [
+   "Volcano Turtle King", "Leader Obsidian Hellhound", "Leader Blue-Eyed Wolf", "Obsidian Pharaoh",
+   "Tempest Dragon King", "Ash Hellhound", "Whitefang Sabertooth", "Leader Spiked Stone Golem",
+   "Obsidian Hellhound", "Blue-Eyed Wolf", "Spiked Stone Golem", "Stone Golem", "Leader Iron Horn Rhino",
+   "Gorilla King", "Iron Horn Rhino", "Fang Hyena", "Hellhound Alpha", "Scorpion King", "Ice Golem", "Polar Bear",
+   "Rabbit King", "Sand Scorpion"
+  ],
+  "card_notes": {
+   "Obsidian Hellhound": "ATK +6%",
+   "Blue-Eyed Wolf": "ATK +25",
+   "Spiked Stone Golem": "ATK +4%",
+   "Stone Golem": "ATK +18",
+   "Iron Horn Rhino": "Crit Rate +3%",
+   "Fang Hyena": "ATK +10",
+   "Ice Golem": "LUK +5",
+   "Polar Bear": "STR +5",
+   "Rabbit King": "สตัน 3% เข้ากับ Blade Training (+10% ใส่ศัตรูที่ติดสตัน)",
+   "Sand Scorpion": "STR +3"
+  },
+  "sets": "เก็บการ์ดให้ครบแมพได้โบนัสถาวรโดยไม่ต้องใส่: Hellhound Ash Fields (ATK +1%, STR +3), Tiger Thicket (Attack Speed +1%, AGI +2), Scorpion Dunes (CRIT +1, LUK +2), Hyena Den (CRIT +1)"
  }
 }

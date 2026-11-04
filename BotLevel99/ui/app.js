@@ -772,7 +772,7 @@ $('#boss-form').addEventListener('submit', async (e) => {
 // ---- build ------------------------------------------------------------------
 // data/builds.json ranks each class's Extra passives and cards. "Full" is the top of each
 // list; "now" is the best of what this account owns (cards.json) and has unlocked
-// (an Extra of another class needs that class at Lv.99).
+// (an Extra of another class needs that class at Lv.99; a class never gets its own).
 const CARD_FROM = {
   Boss: () => 'บอสโลก (โหมดล่าบอส)',
   'Mini-Boss': () => 'กล่องทองจากการตีมอน',
@@ -787,8 +787,9 @@ function buildData() {
   const cards = new Map();
   for (const a of cfg.cards?.areas || []) for (const c of a.cards) cards.set(c.monster, { ...c, area: a.area });
   const extras = new Map((cfg.extras?.extras || []).map((e) => [e.name, e]));
-  const unlocked = (e) => !!e && (!e.needs || done.includes(e.needs.split(' ')[0]));
-  return { cfg, job, done, build: cfg.builds?.[job], cards, extras, unlocked };
+  const allowed = (e) => !!e && e.class !== job && !e.class_only;
+  const unlocked = (e) => allowed(e) && done.includes(e.class);
+  return { cfg, job, done, build: cfg.builds?.[job], cards, extras, allowed, unlocked };
 }
 
 function renderBuild() {
@@ -805,17 +806,18 @@ function renderBuild() {
   $('#build-summary').textContent = b ? b.summary : `ยังไม่มี build ของ ${d.job || 'อาชีพนี้'}`;
   if (!b) return;
   const owned = (name) => d.cards.get(name)?.owned || 0;
+  const exList = b.extras.filter((x) => d.allowed(d.extras.get(x.name)));
 
   // full: the top of each list
   const fullStats = b.stats.full;
   $('#build-full').replaceChildren(
     statBlock(fullStats),
-    slotList('Extra 6 ช่อง', b.extras.slice(0, 6).map((x) => extraRow(d, x.name, x.why))),
+    slotList('Extra 6 ช่อง', exList.slice(0, 6).map((x) => extraRow(d, x.name, x.why))),
     slotList('การ์ด 8 ใบ', b.cards.slice(0, 8).map((c) => cardRow(d, c.monster, c.why, c.gain))));
 
   // now: the best of what is owned / unlocked
-  const exNow = b.extras.filter((x) => d.unlocked(d.extras.get(x.name))).slice(0, 6);
-  const nextEx = b.extras.find((x) => !d.unlocked(d.extras.get(x.name)));
+  const exNow = exList.filter((x) => d.unlocked(d.extras.get(x.name))).slice(0, 6);
+  const nextEx = exList.find((x) => !d.unlocked(d.extras.get(x.name)));
   const exRows = exNow.map((x) => extraRow(d, x.name, x.why));
   while (exRows.length < 6) {
     exRows.push(el('li', { class: 'slot is-empty' }, el('span', { class: 'slot-name', text: 'ว่าง' }),
@@ -851,7 +853,7 @@ function extraRow(d, name, why) {
   const ok = d.unlocked(e);
   return el('li', { class: `slot${ok ? '' : ' is-missing'}` },
     el('span', { class: 'slot-name', text: name }),
-    el('span', { class: 'slot-tag', 'data-ok': ok ? '1' : null, text: ok ? `${e.class} ✓` : `ต้องมี ${e.needs}` }),
+    el('span', { class: 'slot-tag', 'data-ok': ok ? '1' : null, text: ok ? `${e.class} ✓` : `ต้องมี ${e.class} Lv.99` }),
     el('span', { class: 'slot-why', text: why || e.effect || '' }));
 }
 
