@@ -930,7 +930,7 @@ class Game:
         """
         step('เปิดหน้า Stats')
         if not self.open_stats():
-            self.log('เปิดหน้า Stats ไม่ได้')
+            self.log(f'เปิดหน้า Stats ไม่ได้ ({self._save("stats-open")})')
             self.to_hud()
             return False
         try:

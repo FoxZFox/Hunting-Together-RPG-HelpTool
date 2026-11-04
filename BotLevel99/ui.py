@@ -279,7 +279,8 @@ class Panel:
             lines.append(']')
         section = '\n'.join(lines) + '\n'
         text = open(CONFIG_PATH, encoding='utf-8').read()
-        text, n = re.subn(r'(?ms)^\[stats\]\n.*?(?=^\[|\Z)', lambda _: section, text)
+        # up to the next section, leaving the blank lines and comments that head it
+        text, n = re.subn(r'(?ms)^\[stats\]\n.*?(?=^(?:[ \t]*(?:#[^\n]*)?\n)*\[|\Z)', lambda _: section, text)
         if n != 1:
             text = text.rstrip('\n') + '\n\n' + section
         self._write_config(text)

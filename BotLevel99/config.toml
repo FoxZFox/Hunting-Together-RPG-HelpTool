@@ -94,11 +94,13 @@ Thief = [
   { level = 99, STR = 99, AGI = 76, LUK = 54 },
 ]
 Samurai = [
-  { level = 60, STR = 50, AGI = 50, LUK = 28, DEX = 11 },
-  { level = 70, STR = 50, AGI = 70, LUK = 28, DEX = 14 },
-  { level = 80, STR = 50, AGI = 84, LUK = 31, DEX = 25 },
-  { level = 90, STR = 50, AGI = 99, LUK = 34, DEX = 31 },
-  { level = 99, STR = 50, AGI = 99, LUK = 50, DEX = 50 },
+  { level = 60, STR = 50, AGI = 50, DEX = 11, LUK = 28 },
+  { level = 70, STR = 50, AGI = 70, DEX = 14, LUK = 28 },
+  { level = 80, STR = 50, AGI = 84, DEX = 25, LUK = 31 },
+  { level = 85, STR = 50, AGI = 87, DEX = 27, LUK = 45 },
+  { level = 90, STR = 58, AGI = 87, DEX = 27, LUK = 53 },
+  { level = 95, STR = 70, AGI = 87, DEX = 27, LUK = 53 },
+  { level = 99, STR = 81, AGI = 87, DEX = 27, LUK = 55 },
 ]
 
 # ----- แท็บ Build ของหน้าควบคุม (แก้ในแท็บ Build ได้) -----
