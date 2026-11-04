@@ -87,7 +87,8 @@ ELEMENTS =('Neutral', 'Fire', 'Water', 'Wind', 'Earth', 'Holy', 'Shadow', 'Ghost
 # Game keys (Linux key codes, sent through the emulator's keyboard device)
 KEY_B = 48                                # Bag
 KEY_N = 49                                # Adventure Book (opens on Card Book)
-KEY_O = 24                                # Roblox camera: zoom out one step
+KEY_C = 46                                # Status & Skills
+KEY_O = 24                               # Roblox camera: zoom out one step
 KEYS = {'Q': 16, 'W': 17, 'E': 18, 'A': 30, 'S': 31, 'D': 32, 'F': 33}   # Q = roll, WASD = move
 
 # Template name -> region where it is looked for (x, y, w, h)
@@ -98,7 +99,8 @@ TEMPLATE_REGIONS = {
     'book_icon': (240, 0, 200, 80),       # Adventure Book window (an update moved it from x~366 to ~299)
     'hunt_btn': (960, 620, 270, 70),      # Card Book: "Hunt this monster"
     'stop_btn': (960, 620, 270, 70),      # Card Book: "Stop" = this monster is already being hunted
-    'bag_icon': (525, 75, 75, 75),        # Bag window
+    'bag_icon': (525, 75, 75, 75),        # Bag window (sometimes still a loading globe)
+    'bag_title': (560, 85, 140, 60),      # the word "Bag" beside it
     'auto_gear': (25, 590, 110, 50),
     'dismantle_select_all': (960, 580, 140, 50),
     'dismantle_done': (330, 95, 300, 65),
@@ -231,7 +233,9 @@ def screen_state(img):
     """
     if seen(img, 'book_icon') or seen(img, 'close_x', 0.85, BOOK_X_REGION):
         return 'book'
-    if seen(img, 'bag_icon') + seen(img, 'auto_gear') + seen(img, 'close_x', 0.85, BAG_X_REGION) >= 2:
+    # Bag: on 2026-11-04 its icon was still a loading globe while the pointer sat on its X
+    if (seen(img, 'bag_icon') + seen(img, 'bag_title') + seen(img, 'auto_gear')
+            + seen(img, 'close_x', 0.85, BAG_X_REGION)) >= 2:
         return 'bag'
     if seen(img, 'menu_quests'):
         return 'menu'
@@ -495,7 +499,7 @@ class Game:
         time.sleep(wait)
 
     def key(self, code):
-        note('key', label={KEY_B: 'B', KEY_N: 'N', KEY_O: 'O', **{v: k for k, v in KEYS.items()}}.get(code, str(code)))
+        note('key', label={KEY_B: 'B', KEY_N: 'N', KEY_C: 'C', KEY_O: 'O', **{v: k for k, v in KEYS.items()}}.get(code, str(code)))
         self.dev.key(code)
 
     def swipe(self, a, b, ms=700):
@@ -880,15 +884,20 @@ class Game:
 
         The window remembers its last tab, so after the player has been on Skills (setting an
         Extra, say) it opens there (skills_tab). Also measures where the window is (stats_dx):
-        it moves sideways now and then.
+        it moves sideways now and then. Opens with C; the menu is the last try.
         """
-        for _ in range(2):
+        for attempt in range(3):
             if not self.to_hud():
                 continue
-            self.tap(MENU_BTN, 1.0)
-            if not self.wait_state('menu', 4):
-                continue
-            self.tap(MENU_STATUS, 1.5)
+            if attempt < 2:
+                self.key(KEY_C)
+                time.sleep(1.0)
+            else:
+                self.log('กดปุ่ม C แล้วหน้า Stats ไม่ขึ้น เปิดผ่านเมนูแทน')
+                self.tap(MENU_BTN, 1.0)
+                if not self.wait_state('menu', 4):
+                    continue
+                self.tap(MENU_STATUS, 1.5)
             end = time.time() + 4
             while time.time() < end:
                 img = self.shot()
