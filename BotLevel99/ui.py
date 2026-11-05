@@ -226,6 +226,7 @@ class Panel:
             'armor_sets': load_data('sets.json'),
             'classes': CLASSES,
             'autobuild_classes': list(buildsim.CLASSES),
+            'potions': [buildsim.NO_POTION, *buildsim.POTIONS],
         }
 
     # ---- saving config.toml (keeps the comments in the file) ---------------
@@ -336,8 +337,9 @@ class Panel:
                 return min(hi, max(lo, float(value or 0)))
             except (TypeError, ValueError):
                 return 0.0
+        potion = str(body.get('potion') or '')
         args = dict(aspd_min=num(body.get('aspd_min'), 0, 190), crit_min=num(body.get('crit_min'), 0, 100),
-                    farm=bool(body.get('farm')),
+                    farm=bool(body.get('farm')), potion=potion if potion in buildsim.POTIONS else buildsim.NO_POTION,
                     gear={k: num((body.get('gear') or {}).get(k), -999, 9999) for k in buildsim.GEAR_KEYS})
         owned = [str(n) for n in body.get('owned') or []]
         done = self.bot.cfg.get('build', {}).get('classes_99', [])
@@ -347,6 +349,34 @@ class Panel:
         except Exception as e:                    # a data file the simulator cannot read
             return None, f'คำนวณไม่สำเร็จ: {e}'
         return {'full': full, 'now': now, 'classes_99': done}, None
+
+    def read_screen(self):
+        """Build tab: read Status & Skills > Stats with the gear on (Game.read_stats_screen)."""
+        log('อ่านหน้า Stats (ตอนใส่ของอยู่) ให้แท็บ Build')
+        rd = self.bot.game.read_stats_screen()
+        if not rd:
+            log('อ่านหน้า Stats ไม่สำเร็จ')
+            return
+        self.screen_read = rd
+        p = rd['panel']
+        log(f"อ่านหน้า Stats แล้ว: ATK {p.get('ATK')} · ASPD {p.get('ASPD')} · Crit {p.get('Crit Rate')}%"
+            + (f" · ลองกด + {', '.join(rd['previews'])}" if rd['previews'] else ' · ไม่มีแต้มว่างให้ลองกด +'))
+
+    def gear_from_screen(self, body):
+        job = str(body.get('job', ''))
+        rd = getattr(self, 'screen_read', None)
+        if job not in buildsim.CLASSES:
+            return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้'
+        if not rd:
+            return None, 'ยังไม่ได้อ่านหน้า Stats จากเกม กดปุ่ม "อ่านจากเกม" ก่อน'
+        eq = body.get('equipped') or {}
+        equipped = {'set': str(eq.get('set') or ''), 'cards': [str(c) for c in eq.get('cards') or [] if c],
+                    'extras': [str(x) for x in eq.get('extras') or [] if x]}
+        try:
+            gear, notes = buildsim.gear_from_reading(job, rd, equipped)
+        except Exception as e:
+            return None, f'คิดค่าชุดไม่สำเร็จ: {e}'
+        return {'gear': gear, 'notes': notes, 'reading': rd}, None
 
     def save_boss(self, values):
         """Save the [boss] section's values, keeping the comments in the file."""
@@ -464,6 +494,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, p.state(after))
         if url.path == '/api/config':
             return self._send(200, p.config())
+        if url.path == '/api/stats/screen':
+            rd = getattr(p, 'screen_read', None)
+            return self._send(200, {'reading': rd, 'busy': p.task == 'screen'})
         if url.path == '/api/screen.jpg':
             data, shot_at = p.preview_jpeg()
             if not data:
@@ -510,6 +543,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, {'ok': True} if p.run_task('cards', p.read_cards) else busy)
         if path == '/api/autobuild':
             res, err = p.auto_build(body)
+            return self._send(200, {'ok': not err, 'error': err, **(res or {})})
+        if path == '/api/stats/screen':
+            return self._send(200, {'ok': True} if p.run_task('screen', p.read_screen) else busy)
+        if path == '/api/autobuild/gear':
+            res, err = p.gear_from_screen(body)
             return self._send(200, {'ok': not err, 'error': err, **(res or {})})
         if path == '/api/build':
             err = p.save_build(body.get('build', {}))

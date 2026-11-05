@@ -47,6 +47,7 @@ STATS_CONFIRM = (637, 659)
 AUTO_UPGRADE_TOGGLE = (497, 659)          # the game's own "Auto Upgrade Status" switch
 AUTO_UPGRADE_PIXEL = (372, 680)           # green while that switch is on, grey when off
 STAT_PLUS_X = 658
+STAT_PLUS10_X = STAT_PLUS_X + 40          # the "+10" button beside "+"
 ROBLOX_MENU = (57, 50)                    # Roblox logo: People / Leave / Respawn / Resume
 ROBLOX_LEAVE = (253, 228)
 ROBLOX_RESUME = (1025, 228)
@@ -917,6 +918,56 @@ class Game:
     def sx(self, xy):
         """A Stats tab position moved to where the window is now (see STATS_STR_X)."""
         return xy[0] + self.stats_dx, xy[1]
+
+    def read_stats_screen(self, preview=True):
+        """Everything Status & Skills > Stats shows, for the Build tab: base stats, the bonus beside each,
+        points left, the right-hand panel and Special Stats (stats_panel). With free points it also
+        previews +10..+30 on STR, DEX and AGI and reads the green deltas, pressing Clear after each:
+        that is what tells how much ATK% and attack speed % the worn gear gives. Never confirms.
+        None when the Stats tab did not open."""
+        import stats_panel
+        reader = stats_panel.Reader()
+        if not reader.ready():
+            self.log('ไม่เจอแม่แบบตัวเลขของหน้า Stats (templates/stats_panel)')
+            return None
+        step('อ่านหน้า Stats')
+        if not self.open_stats():
+            self.log(f'เปิดหน้า Stats ไม่ได้ ({self._save("stats-open")})')
+            self.to_hud()
+            return None
+        try:
+            img = self.shot()
+            values, points = self.read_stats(img)
+            dx = self.stats_dx
+            out = {'stats': values, 'points': points, 'bonus': reader.bonus(img, dx),
+                   'panel': {k: v for k, (v, _) in reader.panel(img, dx).items()},
+                   'special': reader.special(img, dx), 'previews': {}, 'time': time.strftime('%Y-%m-%d %H:%M')}
+            if not (preview and values and points):
+                return out
+            for stat in ('STR', 'DEX', 'AGI'):
+                cur = values[stat]
+                add = next((n for n in (30, 20, 10) if cur + n <= 99
+                            and sum(stat_cost(v) for v in range(cur, cur + n)) <= points), 0)
+                if not add:
+                    continue
+                cost = sum(stat_cost(v) for v in range(cur, cur + add))
+                y = STAT_ROW_Y[STAT_NAMES.index(stat)]
+                for _ in range(add // 10):
+                    self.tap(self.sx((STAT_PLUS10_X, y)), 0.4)
+                time.sleep(0.6)
+                shot = self.shot()
+                _, left = self.read_stats(shot)
+                if left == points - cost:
+                    delta = reader.panel(shot, dx)
+                    out['previews'][stat] = {'add': add, **{k: d for k, (_, d) in delta.items() if d}}
+                self.tap(self.sx(STATS_CLEAR), 1.0)
+                _, back = self.read_stats(self.shot())
+                if back != points:
+                    self.log(f'กด Clear แล้วแต้มไม่กลับมาครบ ({back} จาก {points}) หยุดลองกด +')
+                    break
+            return out
+        finally:
+            self.to_hud()
 
     def read_stats(self, img):
         """({stat: base value}, points left), with None for what could not be read."""

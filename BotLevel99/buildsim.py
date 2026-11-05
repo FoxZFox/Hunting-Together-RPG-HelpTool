@@ -50,13 +50,44 @@ CLASSES = {
     'Swordsman': dict(main='STR', atk_pct=.20, aspd_pct=.10, crit_k=.3, melee=True, buff=dict(dmg_mult=1.10),
                       skills=[('Crushing Blow', 270, None, False, False), ('Blazing Ring', 250, 3, True, False)]),
     'Cleric': dict(main='STR', atk_pct=.20, matk_pct=.20, aspd_pct=0, crit_k=.3, melee=True,
-                   buff=dict(stats_flat=10, atk_pct=.10, matk_pct=.10, cdr=.10),
+                   buff=dict(stats_flat=10, atk_pct=.10, matk_pct=.10, cdr=.10, cast=10),
                    skills=[('Attack', 100, None, False, False), ('Halo Burst', 585, 3, True, True),
                            ('Mending Light', 260, 3, False, True)]),
 }
 # the Cleric was measured with 5 Extra passives in its slots: take Hunter's Focus (DEX +10, ATK +20%) and
 # Swift Step (attack speed +15%) back out
 MEASURED_WITH = {'Cleric': dict(DEX=10, atk_pct=.20, aspd_pct=.15)}
+
+# speed potions (Bag tooltips, 2026-11-06): only one at a time, a stronger one keeps a weaker one off
+POTIONS = {
+    'Concentration Potion': {'aspd_pct': .10, 'cast': 5, 'level': 1},
+    'Awakening Potion': {'aspd_pct': .15, 'cast': 7.5, 'level': 40},
+    'Berserk Potion': {'aspd_pct': .20, 'cast': 10, 'level': 85},
+}
+NO_POTION = 'ไม่กินยา'
+
+
+def _cast_curve():
+    """Cast Speed % against total DEX, one curve for every class (Samurai and Archer sweeps)."""
+    se = _data('stat_effects.json')
+    pts = {}
+    for job in ('Samurai', 'Archer'):
+        c = se['classes'][job]
+        t0 = 1 + c['bonus']['DEX']
+        pts[t0] = c['base_panel']['Cast Speed']
+        for v, d in zip(se['at'], c['sweeps']['DEX']['Cast Speed']):
+            pts[v + c['bonus']['DEX']] = c['base_panel']['Cast Speed'] + d
+    xs = sorted(pts)
+    return xs, [pts[x] for x in xs]
+
+
+CAST_X, CAST_Y = _cast_curve()
+
+
+def cast_from_dex(dex):
+    import numpy as np
+    return float(np.interp(dex, CAST_X, CAST_Y))
+
 
 GEAR_KEYS = ('atk', 'atk_pct', 'aspd', 'aspd_pct', 'crit', 'crit_dmg', 'def_pen', 'dmg_pct',
              'STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK')
@@ -93,6 +124,8 @@ def parse_effect(text, job=None):
         _add(e, 'def_pen', int(m.group(1)) / 100)
     for m in re.finditer(r'(?:Skill )?Cooldown\s*-(\d+)%', t):
         _add(e, 'cdr', int(m.group(1)) / 100)
+    for m in re.finditer(r'Cast Speed\s*\+(\d+(?:\.\d+)?)%', t):
+        _add(e, 'cast', float(m.group(1)))
     for m in re.finditer(r'[Dd]amage dealt \+(\d+)%', t):
         _add(e, 'dmg_pct', int(m.group(1)) / 100)
     m = re.search(r'ATK \+ (\d+)% of your AGI', t)
@@ -142,6 +175,7 @@ class Model:
         own = self.c['aspd_pct'] + less.get('aspd_pct', 0)
         self.W = gap / (1 - own) / (1 - t['AGI'] / 250 - t['DEX'] / 1000)
         self.crit0 = p['Crit Rate'] - self.c['crit_k'] * self._totals(bare, {})['LUK']
+        self.cast0 = p['Cast Speed'] - cast_from_dex(seen['DEX'])
         self.crit_dmg0 = p['Crit DMG']
         sw = se['sweeps']['VIT']['Max HP']
         self.hp_per_vit = sw[-1] / 98
@@ -171,9 +205,10 @@ class Model:
         p = self.c['aspd_pct'] + e.get('aspd_pct', 0)
         aspd = 200 - self.W * max(0.0, 1 - p) * (1 - t['AGI'] / 250 - t['DEX'] / 1000) + e.get('aspd', 0)
         crit = self.crit0 + self.c['crit_k'] * t['LUK'] + e.get('crit', 0)
+        cast = self.cast0 + cast_from_dex(t['DEX']) + e.get('cast', 0)
         return {'ATK': round(atk), 'MATK': round(matk), 'ASPD': round(min(190.0, aspd), 1),
                 'ASPD uncapped': round(aspd, 1), 'Crit Rate': round(min(100.0, crit), 1),
-                'Crit DMG': self.crit_dmg0 + e.get('crit_dmg', 0),
+                'Crit DMG': self.crit_dmg0 + e.get('crit_dmg', 0), 'Cast Speed': round(cast, 1),
                 'Max HP': round((self.hp0 + self.hp_per_vit * t['VIT']) * (1 + e.get('hp_pct', 0))),
                 'stats': t}
 
@@ -282,14 +317,18 @@ def all_sets(easy_only=False):
     return out
 
 
-def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=None):
+def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=None, fixed=None):
     """Spend points on the six stats: first whatever reaches the ASPD and Crit wanted most cheaply, then the
     most damage per point. Looks ahead to the next step of 10 (main stat) or 5 (the /5 stats), where the
     floor() in the formulas pays out."""
     cur = dict(start or dict.fromkeys(STAT_NAMES, 1))
+    cur.update(fixed or {})
     left = points - sum(stat_cost(v) for s in STAT_NAMES for v in range(1, cur[s]))
+    free = [s for s in STAT_NAMES if s not in (fixed or {})]
 
     def steps(s):
+        if s not in free:
+            return []
         out = []
         for n in (1, 2, 3, 4, 5, 10):
             if cur[s] + n > 99:
@@ -338,7 +377,7 @@ def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=N
 
 
 def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, crit_min=0.0, farm=False,
-               gear=None, slots=6, card_slots=8, rounds=3):
+               gear=None, slots=6, card_slots=8, rounds=3, potion='Berserk Potion'):
     """Stats, 8 cards, the Extra slots and an armour set together, a few rounds of each in turn.
     owned: card names this account has (None = every card)."""
     model = Model(job)
@@ -351,7 +390,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
         gear['def_pen'] /= 100
     if 'dmg_pct' in gear:
         gear['dmg_pct'] /= 100
-    base = combine(class_buffs(job), gear)
+    pot = {k: v for k, v in POTIONS.get(potion, {}).items() if k != 'level'}
+    base = combine(class_buffs(job), gear, pot)
     cards = [c for c in all_cards(job) if owned is None or c[0] in owned]
     extras = all_extras(job, unlocked)
     sets = all_sets(easy_sets) + [('ไม่ใส่ชุดเซ็ท', None, {})]
@@ -391,6 +431,28 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     stats, left = best_stats(model, e, points, aspd_min, crit_min, farm)
     pn = model.panel(stats, e)
     notes = []
+    # each set with the rest kept and the stats chosen again for it
+    ranking = []
+    for st in sets:
+        es = combine(base, st[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
+        ss, _ = best_stats(model, es, points, aspd_min, crit_min, farm)
+        ranking.append({'name': st[0], 'obtain': st[1], 'dps': round(model.dps(ss, es, farm))})
+    ranking.sort(key=lambda r: -r['dps'])
+    top = ranking[0]['dps'] or 1
+    for r in ranking:
+        r['pct'] = round(100 * r['dps'] / top, 1)
+    # Crit against ATK: LUK held at a few values, everything else chosen again
+    luk = []
+    for v in (1, 25, 50, 75, 99):
+        sl, left_l = best_stats(model, e, points, aspd_min, 0, farm, fixed={'LUK': v})
+        if left_l < 0:
+            continue
+        pl = model.panel(sl, e)
+        luk.append({'LUK': v, 'stats': sl, 'ATK': pl['ATK'], 'Crit Rate': pl['Crit Rate'],
+                    'ASPD': pl['ASPD'], 'dps': round(model.dps(sl, e, farm))})
+    best_luk = max((r['dps'] for r in luk), default=1) or 1
+    for r in luk:
+        r['pct'] = round(100 * r['dps'] / best_luk, 1)
     if aspd_min and pn['ASPD uncapped'] < aspd_min:
         notes.append(f'ASPD ถึงแค่ {pn["ASPD"]} ไม่ถึง {aspd_min:g} ที่ตั้งไว้')
     if crit_min and pn['Crit Rate'] < crit_min:
@@ -403,6 +465,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
         'panel': {k: v for k, v in pn.items() if k != 'stats'},
         'hits_per_s': round(50 / (200 - pn['ASPD']), 2),
         'dps': round(model.dps(stats, e, farm)),
+        'potion': potion if pot else NO_POTION,
+        'set_ranking': ranking, 'luk_compare': luk,
     }
 
 
@@ -417,3 +481,54 @@ if __name__ == '__main__':
         r = best_build(job)
         print(job, r['stats'], r['set']['name'], [c['name'] for c in r['cards']], [x['name'] for x in r['extras']],
               r['panel'], r['dps'])
+
+
+def gear_from_reading(job, rd, equipped=None):
+    """What the worn gear adds, from a Stats screen reading (Game.read_stats_screen): the reading less the
+    bare class and less the cards, Extras and set worn then (equipped: {'set': name, 'cards': [...],
+    'extras': [...]}). ATK% and attack speed % come from the +10 previews; without them (no free points)
+    the gear is taken to add none. Returns (gear for best_build, notes)."""
+    m = Model(job)
+    equipped = equipped or {}
+    cards = {c[0]: c[2] for c in all_cards(job)}
+    extras = {x['name']: parse_effect(x['effect']) for x in _data('extras.json')['extras']}
+    sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
+    eq = combine(sets.get(equipped.get('set'), {}), *(cards[n] for n in equipped.get('cards', []) if n in cards),
+                 *(extras[n] for n in equipped.get('extras', []) if n in extras))
+    stats, bonus, pan, sp = rd['stats'], rd['bonus'], rd['panel'], rd.get('special', {})
+    notes = []
+    gear = {}
+    for s in STAT_NAMES:
+        gear[s] = int((bonus.get(s) or 0) - m.bonus[s] - eq.get(s, 0))
+    t = {s: int(stats[s] + (bonus.get(s) or 0)) for s in STAT_NAMES}
+    main = m.c['main']
+    pv = rd.get('previews', {})
+    p_atk = m.atk_pct0 + eq.get('atk_pct', 0)
+    if pv.get(main, {}).get('ATK'):
+        t2 = dict(t, **{main: t[main] + pv[main]['add']})
+        p_atk = pv[main]['ATK'] / (m._atk_raw(t2, {}) - m._atk_raw(t, {})) / K_ATK - 1
+    else:
+        notes.append('ไม่มีแต้มว่างให้ลองกด + เลยถือว่าชุดไม่ได้ให้ ATK% (ATK ที่เกินมานับเป็น ATK ตัวเลข)')
+    if pan.get('ATK'):
+        flat = pan['ATK'] / ((1 + p_atk) * K_ATK) - (m._atk_raw(t, {}) + m.atk_x)
+        gear['atk'] = round(flat - eq.get('atk', 0))
+    gear['atk_pct'] = round(100 * (p_atk - m.atk_pct0 - eq.get('atk_pct', 0)), 1)
+    agi = pv.get('AGI', {})
+    p_spd = m.c['aspd_pct'] + eq.get('aspd_pct', 0)
+    if pan.get('ASPD') and pan['ASPD'] >= 190:
+        notes.append('ASPD ตอนอ่านตันที่ 190 แล้ว บอกไม่ได้ว่าชุดให้ความเร็วเกินมาเท่าไหร่')
+    elif agi.get('ASPD'):
+        p_spd = 1 - agi['ASPD'] * 250 / (agi['add'] * m.W)
+    else:
+        notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
+    if pan.get('ASPD'):
+        expect = 200 - m.W * (1 - p_spd) * (1 - t['AGI'] / 250 - t['DEX'] / 1000)
+        gear['aspd'] = round(pan['ASPD'] - expect - eq.get('aspd', 0), 1)
+    gear['aspd_pct'] = round(100 * (p_spd - m.c['aspd_pct'] - eq.get('aspd_pct', 0)), 1)
+    if pan.get('Crit Rate') is not None:
+        gear['crit'] = round(pan['Crit Rate'] - (m.crit0 + m.c['crit_k'] * t['LUK']) - eq.get('crit', 0), 1)
+    if sp.get('Crit DMG') is not None:
+        gear['crit_dmg'] = round(sp['Crit DMG'] - m.crit_dmg0 - eq.get('crit_dmg', 0))
+    if sp.get('DEF Pen') is not None:
+        gear['def_pen'] = round(sp['DEF Pen'] - 100 * eq.get('def_pen', 0))
+    return gear, notes

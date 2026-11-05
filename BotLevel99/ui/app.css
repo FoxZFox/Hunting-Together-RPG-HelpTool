@@ -398,6 +398,11 @@ body.screen-wide .screen-window { order: -1; }
 .ab-area legend { padding: 0; margin-bottom: 2px; font-size: 14px; }
 .ab-panel { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .build-old-title { margin-top: 8px; }
+.ab-read { border: 2px dashed var(--paper-dim); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.ab-equipped { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 12px; margin: 6px 0; }
+.ab-eq { display: grid; gap: 2px; }
+.ab-eq select { width: 100%; }
+.ab-luk tr.is-best td { font-weight: 700; background: #fff7d6; }
 
 /* boss card farm */
 .boss-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px 28px; }

@@ -295,6 +295,11 @@
               <span class="field-help">0 = ให้คิดเองว่าคุ้มแค่ไหน</span>
             </label>
             <label class="field">
+              <span class="field-name">ยาเร่งความเร็ว</span>
+              <select id="ab-potion"></select>
+              <span class="field-help">ติดได้ทีละขวด ขวดแรงกว่าบังขวดอ่อนกว่า</span>
+            </label>
+            <label class="field">
               <span class="field-name">ตีแบบไหน</span>
               <select id="ab-mode">
                 <option value="boss">ตีบอส (เป้าเดียว)</option>
@@ -305,6 +310,15 @@
           <details class="ab-more">
             <summary>ของที่ใส่อยู่ให้อะไรบ้าง (ไม่ใส่ก็ได้ = คิดแบบไม่ใส่ของ)</summary>
             <p class="field-help">รวมออปของทุกชิ้นที่ใส่อยู่ เช่น แหวน Special ASPD +3 ใส่ 3 ในช่อง ASPD, อาวุธ Crit Rate 12 ใส่ 12 ในช่อง Crit Rate, ATK พื้นฐานของอาวุธใส่ในช่อง ATK</p>
+            <div class="ab-read">
+              <p class="field-help"><b>หรือให้บอทอ่านจากหน้า Stats ในเกม:</b> หยุดบอทก่อน ใส่ชุดไว้ และไม่มียาหรือบัฟค้าง ถ้ามีแต้มว่าง บอทจะลองกด + ที่ STR, DEX, AGI แล้วกด Clear เพื่อดูว่าชุดให้ ATK% กับความเร็วเท่าไหร่ (ไม่กด Confirm) บอกด้วยว่าตอนอ่านใส่การ์ด EX และชุดเซ็ทอะไรอยู่ จะได้หักออก เหลือแค่ค่าของชุด</p>
+              <div class="ab-equipped" id="ab-equipped"></div>
+              <div class="panel-actions">
+                <button class="btn btn-blue btn-small" id="ab-read" type="button">อ่านจากเกม</button>
+                <button class="btn btn-ghost btn-small" id="ab-read-again" type="button" hidden>คิดค่าชุดใหม่จากที่อ่านไว้</button>
+                <span class="form-msg" id="ab-read-msg" role="status"></span>
+              </div>
+            </div>
             <div class="ab-gear" id="ab-gear"></div>
           </details>
           <details class="ab-more">
@@ -338,6 +352,8 @@
               <li>ดาเมจต่อวินาทีเป็นตัวเลขเทียบกันเอง: สกิลที่พร้อมใช้ก่อนตีปกติ สกิลที่ตามความเร็ว ASPD ใช้ทุกครั้งที่ตี บัฟของอาชีพติดตลอด (Fade 8 วิใน 20 วิ)</li>
               <li>สมมติว่าเกราะของมอนลดดาเมจ 30% DEF Pen ช่วยลดส่วนนี้ (ยังไม่ได้วัด) และเวทไม่คริ</li>
               <li>Double Hit นับเฉพาะการตีปกติ (อาชีพที่มีสกิลตามความเร็ว ASPD จะใช้สกิลแทนตีปกติ)</li>
+              <li>ยาเร่งความเร็วนับ Attack Speed % กับ Cast Speed ตามคำในเกม ยังไม่ได้นับว่า Cast Speed ทำให้สกิลออกเร็วขึ้นแค่ไหน</li>
+              <li>ตาราง "เทียบ Crit กับ ATK" ล็อก LUK ไว้แต่ละค่า แล้วให้ Stats ที่เหลือคิดใหม่ทุกแถว การ์ด EX ชุดใช้ชุดเดียวกับผลลัพธ์</li>
             </ul>
           </details>
         </section>
