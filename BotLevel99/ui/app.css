@@ -386,6 +386,19 @@ body.screen-wide .screen-window { order: -1; }
 .build-notes ul { margin: 8px 0; padding-left: 20px; font-size: 14px; }
 .build-notes p { font-size: 14px; }
 
+/* auto build: the form, then the same two columns as the hand-written builds */
+.auto-build { border: 2px solid var(--ink); border-radius: 14px; background: #fff; padding: 14px 16px 16px; margin: 14px 0 22px; }
+.ab-inputs, .ab-gear { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px 22px; }
+.ab-inputs .field { grid-template-columns: 1fr 190px; }
+.ab-more { margin-top: 12px; }
+.ab-more summary { cursor: pointer; font-weight: 600; }
+.ab-more > .field-help { margin: 6px 0 8px; }
+.ab-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 18px; max-height: 340px; overflow: auto; padding: 4px 2px; }
+.ab-area { border: 0; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ab-area legend { padding: 0; margin-bottom: 2px; font-size: 14px; }
+.ab-panel { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.build-old-title { margin-top: 8px; }
+
 /* boss card farm */
 .boss-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px 28px; }
 .boss-form .panel-actions { grid-column: 1 / -1; margin-top: 0; }

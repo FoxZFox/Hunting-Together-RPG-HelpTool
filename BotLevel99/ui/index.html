@@ -281,6 +281,67 @@
           <legend class="field-name">อาชีพที่ถึง Lv.99 แล้ว (ปลด Extra ของอาชีพนั้นให้ใช้ได้)</legend>
           <div class="class-list" id="class-99"></div>
         </fieldset>
+        <section class="auto-build" aria-labelledby="ab-title">
+          <h3 class="build-title" id="ab-title">คำนวณ Build อัตโนมัติ <small>Lv.99 จากสูตรของเกมที่วัดจาก 6 อาชีพ</small></h3>
+          <div class="ab-inputs">
+            <label class="field">
+              <span class="field-name">ASPD อย่างน้อย</span>
+              <input type="number" id="ab-aspd" min="0" max="190" step="1" value="190">
+              <span class="field-help">ตันที่ 190 (ตี 5 ครั้งต่อวินาที) ใส่ 0 = ไม่บังคับ</span>
+            </label>
+            <label class="field">
+              <span class="field-name">Crit อย่างน้อย (%)</span>
+              <input type="number" id="ab-crit" min="0" max="100" step="1" value="0">
+              <span class="field-help">0 = ให้คิดเองว่าคุ้มแค่ไหน</span>
+            </label>
+            <label class="field">
+              <span class="field-name">ตีแบบไหน</span>
+              <select id="ab-mode">
+                <option value="boss">ตีบอส (เป้าเดียว)</option>
+                <option value="farm">ฟาร์ม (สกิลวงกว้างโดน 3 ตัว)</option>
+              </select>
+            </label>
+          </div>
+          <details class="ab-more">
+            <summary>ของที่ใส่อยู่ให้อะไรบ้าง (ไม่ใส่ก็ได้ = คิดแบบไม่ใส่ของ)</summary>
+            <p class="field-help">รวมออปของทุกชิ้นที่ใส่อยู่ เช่น แหวน Special ASPD +3 ใส่ 3 ในช่อง ASPD, อาวุธ Crit Rate 12 ใส่ 12 ในช่อง Crit Rate, ATK พื้นฐานของอาวุธใส่ในช่อง ATK</p>
+            <div class="ab-gear" id="ab-gear"></div>
+          </details>
+          <details class="ab-more">
+            <summary>การ์ดที่มี <span id="ab-cards-count"></span></summary>
+            <p class="field-help">ไม่ติ๊กเลย = คิดแค่ Full Build จากการ์ดทุกใบ ติ๊กไว้ = ขึ้นอีกแบบที่ใช้แค่การ์ดที่ติ๊ก</p>
+            <div class="panel-actions">
+              <button class="btn btn-ghost btn-small" id="ab-cards-owned" type="button">ติ๊กตามที่อ่านจาก Card Book</button>
+              <button class="btn btn-ghost btn-small" id="ab-cards-none" type="button">ล้างที่ติ๊ก</button>
+            </div>
+            <div class="ab-cards" id="ab-cards"></div>
+          </details>
+          <div class="panel-actions">
+            <span class="form-msg" id="ab-msg" role="status"></span>
+            <span class="spacer"></span>
+            <button class="btn btn-go" id="ab-run" type="button">คำนวณ</button>
+          </div>
+          <div class="build-cols" id="ab-cols" hidden>
+            <section class="build-col" id="ab-now-col" aria-labelledby="ab-now-title">
+              <h3 class="build-title" id="ab-now-title">ใช้การ์ดที่ติ๊ก <small>EX ของอาชีพที่ติ๊กว่า Lv.99 และชุดที่หาง่าย</small></h3>
+              <div id="ab-now"></div>
+            </section>
+            <section class="build-col is-full" aria-labelledby="ab-full-title">
+              <h3 class="build-title" id="ab-full-title">Full Build <small>การ์ด EX และชุดครบทุกอย่าง</small></h3>
+              <div id="ab-full"></div>
+            </section>
+          </div>
+          <details class="build-notes">
+            <summary>คิดยังไง และข้อสมมติ</summary>
+            <ul>
+              <li>ค่าในหน้า Stats คิดจากสูตรของเกม (ตรงกับที่วัดจากตัว Lv.99 ทั้ง 6 อาชีพ คลาดไม่เกิน 1–2 แต้ม) ไม่นับของสวมใส่ นอกจากที่กรอกไว้ข้างบน</li>
+              <li>ดาเมจต่อวินาทีเป็นตัวเลขเทียบกันเอง: สกิลที่พร้อมใช้ก่อนตีปกติ สกิลที่ตามความเร็ว ASPD ใช้ทุกครั้งที่ตี บัฟของอาชีพติดตลอด (Fade 8 วิใน 20 วิ)</li>
+              <li>สมมติว่าเกราะของมอนลดดาเมจ 30% DEF Pen ช่วยลดส่วนนี้ (ยังไม่ได้วัด) และเวทไม่คริ</li>
+              <li>Double Hit นับเฉพาะการตีปกติ (อาชีพที่มีสกิลตามความเร็ว ASPD จะใช้สกิลแทนตีปกติ)</li>
+            </ul>
+          </details>
+        </section>
+        <h3 class="build-title build-old-title">Build ที่เขียนไว้เอง <small>ข้อมูลเดิม ก่อนมีตัวคำนวณ</small></h3>
         <p class="panel-intro" id="build-summary"></p>
         <div class="build-cols" id="build-cols">
           <section class="build-col" aria-labelledby="build-now-title">

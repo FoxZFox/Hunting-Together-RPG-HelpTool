@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse
 
 import cv2
 
+import buildsim
 from bot import (CONFIG_PATH, LOG_LINES, MONSTERS_PATH, Bot, load_areas, load_config, log,
                  save_monsters)
 from device import DeviceError
@@ -224,6 +225,7 @@ class Panel:
             'extras': load_data('extras.json'),
             'armor_sets': load_data('sets.json'),
             'classes': CLASSES,
+            'autobuild_classes': list(buildsim.CLASSES),
         }
 
     # ---- saving config.toml (keeps the comments in the file) ---------------
@@ -321,6 +323,30 @@ class Panel:
                 return f'หา {key} ใน config.toml ไม่เจอ'
         self._write_config(text)
         return None
+
+    def auto_build(self, body):
+        """Build tab: the best Lv.99 stats, cards, Extras and set (buildsim). Always the full build; with ticked
+        cards also one limited to them, the Extras of classes at Lv.99 and the easy sets."""
+        job = str(body.get('job', ''))
+        if job not in buildsim.CLASSES:
+            return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้ ยังไม่ได้วัดสูตร (มี {", ".join(buildsim.CLASSES)})'
+
+        def num(value, lo, hi):
+            try:
+                return min(hi, max(lo, float(value or 0)))
+            except (TypeError, ValueError):
+                return 0.0
+        args = dict(aspd_min=num(body.get('aspd_min'), 0, 190), crit_min=num(body.get('crit_min'), 0, 100),
+                    farm=bool(body.get('farm')),
+                    gear={k: num((body.get('gear') or {}).get(k), -999, 9999) for k in buildsim.GEAR_KEYS})
+        owned = [str(n) for n in body.get('owned') or []]
+        done = self.bot.cfg.get('build', {}).get('classes_99', [])
+        try:
+            full = buildsim.best_build(job, **args)
+            now = buildsim.best_build(job, owned=set(owned), unlocked=done, easy_sets=True, **args) if owned else None
+        except Exception as e:                    # a data file the simulator cannot read
+            return None, f'คำนวณไม่สำเร็จ: {e}'
+        return {'full': full, 'now': now, 'classes_99': done}, None
 
     def save_boss(self, values):
         """Save the [boss] section's values, keeping the comments in the file."""
@@ -482,6 +508,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, {'ok': True} if p.run_task('scan', p.scan) else busy)
         if path == '/api/cards/read':
             return self._send(200, {'ok': True} if p.run_task('cards', p.read_cards) else busy)
+        if path == '/api/autobuild':
+            res, err = p.auto_build(body)
+            return self._send(200, {'ok': not err, 'error': err, **(res or {})})
         if path == '/api/build':
             err = p.save_build(body.get('build', {}))
             return self._send(200, {'ok': not err, 'error': err})
