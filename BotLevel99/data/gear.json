@@ -4,7 +4,8 @@
   "every piece rolls 1 Special and 3 Random stats; a Tier VI piece rolls 4 Random",
   "Random stats never repeat on one item",
   "Tier VI can roll every option listed; below VI only the ones without only_vi",
-  "ranges as the game lists them (weapon Crit Rate and armor Special Move Speed are shown without %); not yet known whether they change with tier or +upgrade",
+  "ranges as the game lists them, the same for every tier (the user, 2026-11-05); +upgrade does not change the options",
+  "weapon and ring Crit Rate and armor Special Move Speed are shown without %: whether Crit Rate is % or CRIT points is to be tested",
   "the equipment panel calls Helm, Mask and Armor 'Upper Head', 'Mid Head' and 'Body', and the two rings 'Acc.1' and 'Acc.2'",
   "ATK Ring and MATK Ring differ only in their base stat (ATK or MATK), like weapons"
  ],
