@@ -930,6 +930,12 @@ class Game:
         if not reader.ready():
             self.log('ไม่เจอแม่แบบตัวเลขของหน้า Stats (templates/stats_panel)')
             return None
+        # the class: the formulas differ (a bow's main stat is DEX), and the Build tab may show another one
+        job = None
+        step('อ่านอาชีพจากกระเป๋า')
+        if self.open_window(KEY_B, 'bag', MENU_BAG):
+            job = self._read_job()
+        self.to_hud()
         step('อ่านหน้า Stats')
         if not self.open_stats():
             self.log(f'เปิดหน้า Stats ไม่ได้ ({self._save("stats-open")})')
@@ -941,7 +947,8 @@ class Game:
             dx = self.stats_dx
             out = {'stats': values, 'points': points, 'bonus': reader.bonus(img, dx),
                    'panel': {k: v for k, (v, _) in reader.panel(img, dx).items()},
-                   'special': reader.special(img, dx), 'previews': {}, 'time': time.strftime('%Y-%m-%d %H:%M')}
+                   'special': reader.special(img, dx), 'previews': {}, 'job': job,
+                   'time': time.strftime('%Y-%m-%d %H:%M')}
             if not (preview and values and points):
                 return out
             for stat in ('STR', 'DEX', 'AGI'):

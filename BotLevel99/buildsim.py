@@ -531,4 +531,8 @@ def gear_from_reading(job, rd, equipped=None):
         gear['crit_dmg'] = round(sp['Crit DMG'] - m.crit_dmg0 - eq.get('crit_dmg', 0))
     if sp.get('DEF Pen') is not None:
         gear['def_pen'] = round(sp['DEF Pen'] - 100 * eq.get('def_pen', 0))
+    neg = [k for k in ('atk', 'atk_pct', 'aspd_pct', 'crit', 'crit_dmg') if gear.get(k, 0) < -2]
+    if neg:
+        notes.append('ค่าติดลบ (' + ', '.join(neg) + ') แปลว่าการ์ด EX ชุดเซ็ทที่เลือกว่าใส่อยู่ไม่ตรงกับในเกม '
+                     'หรือมียา/บัฟค้างตอนอ่าน')
     return gear, notes

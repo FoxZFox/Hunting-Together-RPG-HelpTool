@@ -363,20 +363,27 @@ class Panel:
             + (f" · ลองกด + {', '.join(rd['previews'])}" if rd['previews'] else ' · ไม่มีแต้มว่างให้ลองกด +'))
 
     def gear_from_screen(self, body):
+        """What the worn gear adds, from the last Stats screen reading. Uses the class read in game (the Bag
+        title) over the one picked in the Build tab: on 2026-11-06 an Archer read as a Samurai gave ATK% -94."""
         job = str(body.get('job', ''))
         rd = getattr(self, 'screen_read', None)
-        if job not in buildsim.CLASSES:
-            return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้'
         if not rd:
             return None, 'ยังไม่ได้อ่านหน้า Stats จากเกม กดปุ่ม "อ่านจากเกม" ก่อน'
+        notes = []
+        seen = rd.get('job')
+        if seen and seen != job:
+            notes.append(f'ตัวที่อ่านเป็น {seen} ไม่ใช่ {job or "อาชีพที่เลือก"} เลยคิดแบบ {seen}')
+            job = seen
+        if job not in buildsim.CLASSES:
+            return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้'
         eq = body.get('equipped') or {}
         equipped = {'set': str(eq.get('set') or ''), 'cards': [str(c) for c in eq.get('cards') or [] if c],
                     'extras': [str(x) for x in eq.get('extras') or [] if x]}
         try:
-            gear, notes = buildsim.gear_from_reading(job, rd, equipped)
+            gear, more = buildsim.gear_from_reading(job, rd, equipped)
         except Exception as e:
             return None, f'คิดค่าชุดไม่สำเร็จ: {e}'
-        return {'gear': gear, 'notes': notes, 'reading': rd}, None
+        return {'gear': gear, 'notes': notes + more, 'reading': rd, 'job': job}, None
 
     def save_boss(self, values):
         """Save the [boss] section's values, keeping the comments in the file."""

@@ -996,6 +996,7 @@ function abEquipped() {
 async function abGearFromReading() {
   const res = await api('/api/autobuild/gear', { job: buildData().job, equipped: abEquipped() }).catch(() => null);
   if (!res?.ok) return setMsg('#ab-read-msg', res?.error || 'คิดค่าชุดไม่สำเร็จ', 'bad');
+  if (res.job && res.job !== buildData().job) await saveBuild({ class: res.job });   // show the class that was read
   for (const [k, v] of Object.entries(res.gear)) {
     const input = document.querySelector(`#ab-gear [data-gear="${k}"]`);
     if (input) input.value = v;
