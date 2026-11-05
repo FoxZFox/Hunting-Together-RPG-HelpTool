@@ -177,3 +177,43 @@ class Reader:
     def bonus(self, img, dx):
         """{stat: the bonus beside it} (cards, gear, Extras and passives that add to the stat)."""
         return {s: number(read_text(strip(img, s, dx, 'bonus'), self.t['bonus'])) for s in STAT_NAMES}
+
+
+# ---- the buff bar above HP on the plain HUD ------------------------------------------------------
+BUFF_DIR = os.path.join(HERE, 'templates', 'buffs')
+BUFF_RECT = (430, 555, 370, 60)           # x, y, w, h: where the buff and potion icons sit
+POTION_NAMES = ('Concentration Potion', 'Awakening Potion', 'Berserk Potion')
+
+
+def load_buffs():
+    out = {}
+    if os.path.isdir(BUFF_DIR):
+        for f in sorted(os.listdir(BUFF_DIR)):
+            if f.endswith('.png'):
+                im = cv2.imread(os.path.join(BUFF_DIR, f))
+                name = f[:-4].replace('_', ' ')
+                # skill icons come from the Skills tab, where a slot-number badge covers the top-left corner
+                out[name] = im if name in POTION_NAMES else im[20:, 20:]
+    return out
+
+
+def buffs(img, templates=None):
+    """Names of the class buffs and the speed potion showing in the buff bar. Skill icons score 0.85-0.96
+    there when up and 0.6 or less when not (2026-11-06); the three potion bottles look alike, so only the
+    best of them counts, and only from 0.85."""
+    templates = templates if templates is not None else load_buffs()
+    x, y, w, h = BUFF_RECT
+    roi = img[y:y + h, x:x + w]
+    score = {}
+    for name, t0 in templates.items():
+        best = 0.0
+        for s in np.arange(0.40, 0.70, 0.02):
+            t = cv2.resize(t0, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
+            if t.shape[0] <= roi.shape[0] and t.shape[1] <= roi.shape[1]:
+                best = max(best, cv2.minMaxLoc(cv2.matchTemplate(roi, t, cv2.TM_CCOEFF_NORMED))[1])
+        score[name] = best
+    found = [n for n, v in score.items() if n not in POTION_NAMES and v >= 0.75]
+    pots = sorted((v, n) for n, v in score.items() if n in POTION_NAMES)
+    if pots and pots[-1][0] >= 0.85:
+        found.append(pots[-1][1])
+    return found

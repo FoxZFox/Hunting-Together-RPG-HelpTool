@@ -930,6 +930,10 @@ class Game:
         if not reader.ready():
             self.log('ไม่เจอแม่แบบตัวเลขของหน้า Stats (templates/stats_panel)')
             return None
+        # buffs and the speed potion now up count in the Stats screen too: note them to take them out
+        active = []
+        if self.to_hud():
+            active = stats_panel.buffs(self.shot())
         # the class: the formulas differ (a bow's main stat is DEX), and the Build tab may show another one
         job = None
         step('อ่านอาชีพจากกระเป๋า')
@@ -947,7 +951,7 @@ class Game:
             dx = self.stats_dx
             out = {'stats': values, 'points': points, 'bonus': reader.bonus(img, dx),
                    'panel': {k: v for k, (v, _) in reader.panel(img, dx).items()},
-                   'special': reader.special(img, dx), 'previews': {}, 'job': job,
+                   'special': reader.special(img, dx), 'previews': {}, 'job': job, 'buffs': active,
                    'time': time.strftime('%Y-%m-%d %H:%M')}
             if not (preview and values and points):
                 return out

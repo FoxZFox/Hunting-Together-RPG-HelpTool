@@ -89,6 +89,16 @@ def cast_from_dex(dex):
     return float(np.interp(dex, CAST_X, CAST_Y))
 
 
+# buffs that show in the Stats screen while up (read off the buff bar when the screen is read), from the
+# skills' own wording; Grace, Sacred Aegis and Battle Rally also come from party members
+BUFF_EFFECTS = {
+    'Mirror Mind': {'aspd_pct': .15, 'crit': 15, 'crit_dmg': 15},
+    'Forest Pulse': {'stat_pct': {'AGI': .12, 'DEX': .12}},
+    'Grace': {'STR': 10, 'AGI': 10, 'INT': 10, 'DEX': 10, 'atk_pct': .10, 'matk_pct': .10, 'cast': 10},
+    'Sacred Aegis': {},
+    'Battle Rally': {},
+}
+
 GEAR_KEYS = ('atk', 'atk_pct', 'aspd', 'aspd_pct', 'crit', 'crit_dmg', 'def_pen', 'dmg_pct',
              'STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK')
 
@@ -493,19 +503,26 @@ def gear_from_reading(job, rd, equipped=None):
     cards = {c[0]: c[2] for c in all_cards(job)}
     extras = {x['name']: parse_effect(x['effect']) for x in _data('extras.json')['extras']}
     sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
+    # buffs and the potion up at the time (read off the buff bar) count in the screen too: take them out
+    up = [{k: v for k, v in (BUFF_EFFECTS.get(b) or POTIONS.get(b) or {}).items() if k != 'level'}
+          for b in rd.get('buffs') or []]
+    pct = combine(*up).get('stat_pct', {})
     eq = combine(sets.get(equipped.get('set'), {}), *(cards[n] for n in equipped.get('cards', []) if n in cards),
-                 *(extras[n] for n in equipped.get('extras', []) if n in extras))
+                 *(extras[n] for n in equipped.get('extras', []) if n in extras),
+                 *({k: v for k, v in u.items() if k != 'stat_pct'} for u in up))
     stats, bonus, pan, sp = rd['stats'], rd['bonus'], rd['panel'], rd.get('special', {})
-    notes = []
+    notes = [f"หักบัฟที่ติดอยู่ตอนอ่านออกแล้ว: {', '.join(rd['buffs'])}"] if rd.get('buffs') else []
     gear = {}
+    t = {s: int(stats[s] + (bonus.get(s) or 0)) for s in STAT_NAMES}             # as the screen worked it out
     for s in STAT_NAMES:
-        gear[s] = int((bonus.get(s) or 0) - m.bonus[s] - eq.get(s, 0))
-    t = {s: int(stats[s] + (bonus.get(s) or 0)) for s in STAT_NAMES}
+        before_pct = round(t[s] / (1 + pct.get(s, 0)))                           # Forest Pulse adds a % on top
+        gear[s] = int(before_pct - stats[s] - m.bonus[s] - eq.get(s, 0))
     main = m.c['main']
     pv = rd.get('previews', {})
     p_atk = m.atk_pct0 + eq.get('atk_pct', 0)
     if pv.get(main, {}).get('ATK'):
-        t2 = dict(t, **{main: t[main] + pv[main]['add']})
+        grown = round(t[main] / (1 + pct.get(main, 0))) + pv[main]['add']
+        t2 = dict(t, **{main: int(grown * (1 + pct.get(main, 0)))})
         p_atk = pv[main]['ATK'] / (m._atk_raw(t2, {}) - m._atk_raw(t, {})) / K_ATK - 1
     else:
         notes.append('ไม่มีแต้มว่างให้ลองกด + เลยถือว่าชุดไม่ได้ให้ ATK% (ATK ที่เกินมานับเป็น ATK ตัวเลข)')
@@ -518,7 +535,8 @@ def gear_from_reading(job, rd, equipped=None):
     if pan.get('ASPD') and pan['ASPD'] >= 190:
         notes.append('ASPD ตอนอ่านตันที่ 190 แล้ว บอกไม่ได้ว่าชุดให้ความเร็วเกินมาเท่าไหร่')
     elif agi.get('ASPD'):
-        p_spd = 1 - agi['ASPD'] * 250 / (agi['add'] * m.W)
+        grown = int((round(t['AGI'] / (1 + pct.get('AGI', 0))) + agi['add']) * (1 + pct.get('AGI', 0)))
+        p_spd = 1 - agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
     else:
         notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
     if pan.get('ASPD'):
