@@ -945,7 +945,7 @@ function abCount() {
 
 function abResult(d, r) {
   const p = r.panel;
-  const nums = [['ATK', p.ATK], ['MATK', p.MATK], ['ASPD', `${p.ASPD} (${r.hits_per_s} ครั้ง/วิ)`],
+  const nums = [['ATK', p.ATK], ['MATK', p.MATK], ['ASPD', `${p.ASPD} (${r.hits_per_s} ครั้ง/วิ · สูตรได้ ${Number(p['ASPD uncapped']).toFixed(1)})`],
     ['Crit', `${p['Crit Rate']}%`], ['Crit DMG', `+${p['Crit DMG']}%`], ['HP', p['Max HP'].toLocaleString()],
     ['ดาเมจ/วิ', r.dps.toLocaleString()]];
   const names = d.cfg.stat_names || ['STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK'];
@@ -965,7 +965,7 @@ function abResult(d, r) {
     ...(r.notes || []).map((t) => el('p', { class: 'form-msg', 'data-tone': 'bad', text: t })),
     el('p', { class: 'field-help', text: `Cast Speed +${p['Cast Speed']}% · ยา: ${r.potion}` }),
     r.panel_screen && (r.panel_screen.ASPD !== p.ASPD || r.panel_screen['Crit Rate'] !== p['Crit Rate'])
-      && el('p', { class: 'field-help', text: `หน้า Stats ตอนไม่ได้ตี (บัฟของอาชีพยังไม่ติด): ASPD ${r.panel_screen.ASPD} · Crit ${r.panel_screen['Crit Rate']}% · ATK ${r.panel_screen.ATK} ส่วนตัวเลขด้านบนคือตอนตีที่บัฟติด` }),
+      && el('p', { class: 'field-help', text: `หน้า Stats ตอนไม่ได้ตี (บัฟของอาชีพยังไม่ติด): ASPD ${r.panel_screen.ASPD} (สูตร ${Number(r.panel_screen['ASPD uncapped']).toFixed(1)}) · Crit ${r.panel_screen['Crit Rate']}% · ATK ${r.panel_screen.ATK} ส่วนตัวเลขด้านบนคือตอนตีที่บัฟติด` }),
     slotList('ชุดเซ็ท', [setItem]),
     slotList('ชุดเซ็ทเรียงจากดีสุด (ไม่มีตัวบน ใส่ตัวถัดไป)', (r.set_ranking || []).map((s) =>
       el('li', { class: 'slot' }, el('span', { class: 'slot-name', text: s.name }),
@@ -1048,6 +1048,7 @@ $('#ab-run').addEventListener('click', async () => {
   const res = await api('/api/autobuild', {
     job: d.job, aspd_min: Number($('#ab-aspd').value) || 0, crit_min: Number($('#ab-crit').value) || 0,
     farm: $('#ab-mode').value === 'farm', gear, owned: abTicked(), potion: $('#ab-potion').value,
+    aspd_idle: $('#ab-idle').checked,
   }).catch(() => null);
   if (!res?.ok) {
     $('#ab-cols').hidden = true;

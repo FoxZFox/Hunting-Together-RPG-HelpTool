@@ -27,6 +27,11 @@ K_ATK, K_MATK = 1.026, 1.03          # left over in every class's ATK / MATK aft
 DEF_CUT = 0.3                        # assumed share of damage monster DEF takes away (not measured)
 FARM_TARGETS = 3                     # monsters an AoE skill hits when farming
 EXTRA_SLOT_LEVELS = (70, 76, 82, 88, 94, 99)
+# The Stats screen shows ASPD rounded DOWN (2026-11-06 01:53, Samurai AGI 94 + Berserk: 188 with Mirror Mind
+# off, 189 with it on, and DEX +30 previewed only +0.1 because it ran into 190: the real value was 189.9, as the
+# formula said). So a build at 189.9 shows 189. An ASPD target is met only when the formula clears it by this
+# much, for the formula's own error (01:28: formula 178.9, screen 179 = real 179.0 or more).
+ASPD_MARGIN = 0.5
 
 # Per class, with only its own passives on. W: the ASPD gap factor without any attack speed %, so that
 # W x (1 - own attack speed %) is what was measured. skills: (name, % of ATK or MATK, cooldown s or None for the
@@ -333,10 +338,12 @@ def all_sets(easy_only=False):
     return out
 
 
-def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=None, fixed=None):
+def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=None, fixed=None, e_target=None):
     """Spend points on the six stats: first whatever reaches the ASPD and Crit wanted most cheaply, then the
     most damage per point. Looks ahead to the next step of 10 (main stat) or 5 (the /5 stats), where the
-    floor() in the formulas pays out."""
+    floor() in the formulas pays out. The ASPD target gets ASPD_MARGIN on top. e_target: the effects the
+    targets must hold with (e.g. without the class's timed buffs); damage is still worked out with e."""
+    et = e if e_target is None else e_target
     cur = dict(start or dict.fromkeys(STAT_NAMES, 1))
     cur.update(fixed or {})
     left = points - sum(stat_cost(v) for s in STAT_NAMES for v in range(1, cur[s]))
@@ -358,15 +365,16 @@ def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=N
     def cost(s, n):
         return sum(stat_cost(v) for v in range(cur[s], cur[s] + n))
 
-    for want, key, stats_for in ((aspd_min, 'ASPD uncapped', ('AGI', 'DEX')), (crit_min, 'Crit Rate', ('LUK',))):
-        while want and model.panel(cur, e)[key] < want:
-            base = model.panel(cur, e)[key]
+    aspd_want = aspd_min and aspd_min + ASPD_MARGIN
+    for want, key, stats_for in ((aspd_want, 'ASPD uncapped', ('AGI', 'DEX')), (crit_min, 'Crit Rate', ('LUK',))):
+        while want and model.panel(cur, et)[key] < want:
+            base = model.panel(cur, et)[key]
             opts = []
             for s in stats_for:
                 for n in steps(s):
                     c = cost(s, n)
                     if c <= left:
-                        gain = model.panel(dict(cur, **{s: cur[s] + n}), e)[key] - base
+                        gain = model.panel(dict(cur, **{s: cur[s] + n}), et)[key] - base
                         if gain > 0:
                             opts.append((gain / c, s, n, c))
             if not opts:
@@ -393,9 +401,10 @@ def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=N
 
 
 def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, crit_min=0.0, farm=False,
-               gear=None, slots=6, card_slots=8, rounds=3, potion='Berserk Potion'):
+               gear=None, slots=6, card_slots=8, rounds=3, potion='Berserk Potion', aspd_idle=False):
     """Stats, 8 cards, the Extra slots and an armour set together, a few rounds of each in turn.
-    owned: card names this account has (None = every card)."""
+    owned: card names this account has (None = every card). aspd_idle: the ASPD and Crit targets must hold
+    without the class's timed buffs (Mirror Mind and the like), as on the Stats screen out of a fight."""
     model = Model(job)
     gear = {k: v for k, v in (gear or {}).items() if k in GEAR_KEYS and v}
     if 'atk_pct' in gear:
@@ -408,6 +417,10 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
         gear['dmg_pct'] /= 100
     pot = {k: v for k, v in POTIONS.get(potion, {}).items() if k != 'level'}
     base = combine(class_buffs(job), gear, pot)
+    idle = combine(gear, pot)                     # the same without the class's timed buffs
+
+    def target(*parts):                           # what the ASPD / Crit targets are checked with
+        return combine(idle, *parts) if aspd_idle else None
     cards = [c for c in all_cards(job) if owned is None or c[0] in owned]
     extras = all_extras(job, unlocked)
     sets = all_sets(easy_sets) + [('ไม่ใส่ชุดเซ็ท', None, {})]
@@ -416,7 +429,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     stats = None
     for _ in range(rounds):
         e = combine(base, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
-        stats, _ = best_stats(model, e, points, aspd_min, crit_min, farm)
+        stats, _ = best_stats(model, e, points, aspd_min, crit_min, farm,
+                              e_target=target(pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x)))
         # set
         def with_(cs, xs, st):
             return combine(base, st[2], *(c[2] for c in cs), *(x[2] for x in xs))
@@ -444,16 +458,17 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
                 break
             pick_x.append(best)
     e = combine(base, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
-    stats, left = best_stats(model, e, points, aspd_min, crit_min, farm)
+    e_screen = combine(idle, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
+    stats, left = best_stats(model, e, points, aspd_min, crit_min, farm, e_target=e_screen if aspd_idle else None)
     pn = model.panel(stats, e)
-    e_screen = combine(gear, pot, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
     ps = model.panel(stats, e_screen)
     notes = []
     # each set with the rest kept and the stats chosen again for it
     ranking = []
     for st in sets:
         es = combine(base, st[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
-        ss, _ = best_stats(model, es, points, aspd_min, crit_min, farm)
+        ss, _ = best_stats(model, es, points, aspd_min, crit_min, farm,
+                           e_target=target(st[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x)))
         ranking.append({'name': st[0], 'obtain': st[1], 'dps': round(model.dps(ss, es, farm))})
     ranking.sort(key=lambda r: -r['dps'])
     top = ranking[0]['dps'] or 1
@@ -462,7 +477,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     # Crit against ATK: LUK held at a few values, everything else chosen again
     luk = []
     for v in (1, 25, 50, 75, 99):
-        sl, left_l = best_stats(model, e, points, aspd_min, 0, farm, fixed={'LUK': v})
+        sl, left_l = best_stats(model, e, points, aspd_min, 0, farm, fixed={'LUK': v},
+                                e_target=e_screen if aspd_idle else None)
         if left_l < 0:
             continue
         pl = model.panel(sl, e)
@@ -471,10 +487,15 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     best_luk = max((r['dps'] for r in luk), default=1) or 1
     for r in luk:
         r['pct'] = round(100 * r['dps'] / best_luk, 1)
-    if aspd_min and pn['ASPD uncapped'] < aspd_min:
-        notes.append(f'ASPD ถึงแค่ {pn["ASPD"]} ไม่ถึง {aspd_min:g} ที่ตั้งไว้')
-    if crit_min and pn['Crit Rate'] < crit_min:
-        notes.append(f'Crit ถึงแค่ {pn["Crit Rate"]}% ไม่ถึง {crit_min:g}% ที่ตั้งไว้')
+    held = ps if aspd_idle else pn                # the panel the targets were asked of
+    when = ' (ตอนไม่มีบัฟอาชีพ)' if aspd_idle else ''
+    if aspd_min and held['ASPD uncapped'] < aspd_min:
+        notes.append(f'ASPD ถึงแค่ {held["ASPD"]}{when} ไม่ถึง {aspd_min:g} ที่ตั้งไว้')
+    elif aspd_min and held['ASPD uncapped'] < aspd_min + ASPD_MARGIN:
+        notes.append(f'ASPD ตามสูตรได้ {held["ASPD uncapped"]:.1f}{when} เผื่อไม่ถึง {ASPD_MARGIN:g} '
+                     f'(สูตรคลาดได้ราว 1) ในเกมอาจขึ้น {aspd_min - 1:g} แทน {aspd_min:g}')
+    if crit_min and held['Crit Rate'] < crit_min:
+        notes.append(f'Crit ถึงแค่ {held["Crit Rate"]}%{when} ไม่ถึง {crit_min:g}% ที่ตั้งไว้')
     return {
         'job': job, 'stats': stats, 'points_left': left, 'notes': notes,
         'cards': [{'name': c[0], 'type': c[1]} for c in pick_c],
@@ -484,7 +505,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
         'hits_per_s': round(50 / (200 - pn['ASPD']), 2),
         'dps': round(model.dps(stats, e, farm)),
         'potion': potion if pot else NO_POTION,
-        'panel_screen': {k: ps[k] for k in ('ATK', 'ASPD', 'Crit Rate', 'Crit DMG')},
+        'panel_screen': {k: ps[k] for k in ('ATK', 'ASPD', 'ASPD uncapped', 'Crit Rate', 'Crit DMG')},
+        'aspd_idle': bool(aspd_idle),
         'set_ranking': ranking, 'luk_compare': luk,
     }
 
@@ -544,16 +566,31 @@ def gear_from_reading(job, rd, equipped=None):
     agi = pv.get('AGI', {})
     keep = (1 - m.c['aspd_pct']) * (1 - eq.get('aspd_pct', 0))       # what is known to shrink the gap
     seen_keep = keep
-    if pan.get('ASPD') and pan['ASPD'] >= 190:
+    shown = pan.get('ASPD')
+    if shown and shown >= 190:
         notes.append('ASPD ตอนอ่านตันที่ 190 แล้ว บอกไม่ได้ว่าชุดให้ความเร็วเกินมาเท่าไหร่')
+    elif agi.get('ASPD') and shown + agi['ASPD'] > 189:
+        notes.append('ลองกด AGI แล้ว ASPD ชน 190 เลยใช้หาว่าความเร็วเพิ่มกี่ % ไม่ได้')
     elif agi.get('ASPD'):
         grown = int((round(t['AGI'] / (1 + pct.get('AGI', 0))) + agi['add']) * (1 + pct.get('AGI', 0)))
         seen_keep = agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
     else:
         notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
-    if pan.get('ASPD') and pan['ASPD'] < 190:          # at the cap the flat part cannot be told either
-        expect = 200 - m.W * seen_keep * (1 - t['AGI'] / 250 - t['DEX'] / 1000)
-        gear['aspd'] = round(pan['ASPD'] - expect - eq.get('aspd', 0), 1)
+    if shown and shown < 190:                         # at the cap the flat part cannot be told either
+        def gap(tt):
+            return m.W * seen_keep * (1 - tt['AGI'] / 250 - tt['DEX'] / 1000)
+        real = shown + 0.5                            # the screen rounds down: somewhere in [shown, shown + 1)
+        for s in ('AGI', 'DEX'):                      # a + preview that stopped at 190 tells it exactly
+            d = pv.get(s, {}).get('ASPD')
+            if d is None:
+                continue
+            grown = int((round(t[s] / (1 + pct.get(s, 0))) + pv[s]['add']) * (1 + pct.get(s, 0)))
+            if gap(t) - gap(dict(t, **{s: grown})) > d + 0.15 and shown + d > 189:
+                real = 190 - d
+                notes.append(f'ASPD จริงราว {real:.1f} (หน้า Stats ปัดเศษลงเป็น {shown:g}) '
+                             f'ดูจากที่ลองกด {s} แล้วขึ้นแค่ +{d:g} เพราะชน 190')
+                break
+        gear['aspd'] = round(real - (200 - gap(t)) - eq.get('aspd', 0), 1)
     seen_pct = round(100 * (1 - seen_keep / keep), 1)
     gear['aspd_pct'] = 0.0                            # gear cannot give attack speed % (data/gear.json)
     if pan.get('Crit Rate') is not None:

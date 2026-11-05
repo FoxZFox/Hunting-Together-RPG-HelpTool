@@ -340,7 +340,7 @@ class Panel:
                 return 0.0
         potion = str(body.get('potion') or '')
         args = dict(aspd_min=num(body.get('aspd_min'), 0, 190), crit_min=num(body.get('crit_min'), 0, 100),
-                    farm=bool(body.get('farm')), potion=potion if potion in buildsim.POTIONS else buildsim.NO_POTION,
+                    farm=bool(body.get('farm')), aspd_idle=bool(body.get('aspd_idle')), potion=potion if potion in buildsim.POTIONS else buildsim.NO_POTION,
                     gear={k: num((body.get('gear') or {}).get(k), -999, 9999) for k in buildsim.GEAR_KEYS})
         owned = [str(n) for n in body.get('owned') or []]
         done = self.bot.cfg.get('build', {}).get('classes_99', [])
