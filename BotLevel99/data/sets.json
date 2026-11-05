@@ -1,0 +1,16 @@
+{
+ "read": "2026-11-05, the user's screenshots of each set's bonus line; Gale from the Samurai's equipment panel on 2026-11-04",
+ "notes": [
+  "only Tier V (orange) armor has sets (the game's own text in the equipment panel)",
+  "the bonus needs all 5 pieces: the game shows how many are worn as (n/5)",
+  "not captured yet: which slots make up each set, and whether fewer pieces give anything"
+ ],
+ "sets": [
+  {"name": "Warrior Set", "rarity": "Common", "bonus5": "ATK +10%"},
+  {"name": "Mage Set", "rarity": "Common", "bonus5": "MATK +10%"},
+  {"name": "Guardian Set", "rarity": "Common", "bonus5": "DEF +25, HP +12%"},
+  {"name": "Black Star Set", "rarity": "Rare", "bonus5": "DEF Pen +20%, MDEF Pen +20%"},
+  {"name": "Blood Lord Set", "rarity": "Rarest", "bonus5": "On hit, restore HP equal to 2% of damage; damage dealt +10%"},
+  {"name": "Gale", "rarity": null, "bonus5": "ASPD +3, Move Speed +5%", "seen": "shown as 'SetGale 5/5' on the Samurai; not in the user's list of 5 sets, rarity unknown"}
+ ]
+}
