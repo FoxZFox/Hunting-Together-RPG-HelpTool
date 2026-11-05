@@ -174,6 +174,59 @@
     "type": "passive",
     "effect": "bow: longer attack range and damage +10%"
    }
+  ],
+  "Cleric": [
+   {
+    "name": "Halo Burst",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Ranged"
+    ],
+    "sp": 18,
+    "cooldown": 3,
+    "effect": "a light that explodes around the target for 585% MATK to every monster in the blast; you and party members in it heal 20% MATK"
+   },
+   {
+    "name": "Sacred Aegis",
+    "type": "buff",
+    "sp": 30,
+    "cooldown": 30,
+    "effect": "DEF +50 and MDEF +50 for 120 s for you and party members"
+   },
+   {
+    "name": "Grace",
+    "type": "buff",
+    "sp": 30,
+    "cooldown": 30,
+    "effect": "STR/AGI/INT/DEX +10, ATK, MATK and move speed +10%, Cast Speed and Cooldown (CDR) 10% for 120 s, for you and party members"
+   },
+   {
+    "name": "Purify",
+    "type": "buff",
+    "sp": 15,
+    "cooldown": 20,
+    "effect": "clears all status effects and blocks new ones for 5 s, for you and your party"
+   },
+   {
+    "name": "Second Dawn",
+    "type": "revive",
+    "sp": "25% of max SP",
+    "cooldown": 10,
+    "effect": "cast for 4.5 s, then revive 1 nearby fallen player with 100% HP"
+   },
+   {
+    "name": "Mending Light",
+    "type": "heal",
+    "sp": 18,
+    "cooldown": 3,
+    "effect": "holy light hits the target for 200% MATK, then a holy grid stays 6 s: every 1 s it heals you and party members in it for 10% MATK and deals 10% MATK to monsters in it (grid grows with skill level); no target = grid on yourself; on cast every party member nearby also heals once for 10% MATK"
+   },
+   {
+    "name": "Devotion",
+    "type": "passive",
+    "effect": "DEF +20, MDEF +20, ATK and MATK +20%"
+   }
   ]
  }
 }
