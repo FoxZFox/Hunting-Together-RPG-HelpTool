@@ -3,7 +3,7 @@
  "notes": [
   "a weapon rolls 1 Special and 3 Random stats; a Tier VI weapon rolls 4 Random",
   "Random stats never repeat on one item",
-  "only_vi = only Tier VI rolls it: below VI there is no Random ATK, MATK, Melee DMG, Ranged DMG, Drop Rate or EXP, and no Special Cast Speed, Crit DMG, Single Skill DMG or AoE Skill DMG",
+  "Tier VI can roll every option listed; below VI only the ones without only_vi (no Random ATK, MATK, Melee DMG, Ranged DMG, Drop Rate or EXP, and no Special Cast Speed, Crit DMG, Single Skill DMG or AoE Skill DMG)",
   "ranges as the game lists them (Crit Rate is shown without %); not yet known whether they change with tier or +upgrade"
  ],
  "slots": {
