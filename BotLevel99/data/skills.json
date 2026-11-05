@@ -1,0 +1,116 @@
+{
+ "read": "2026-11-05, Status & Skills > Skills, every skill at Lv.10 (Max); the text as the game words it",
+ "classes": {
+  "Samurai": [
+   {
+    "name": "Quick Draw",
+    "type": "attack",
+    "tags": [
+     "AoE"
+    ],
+    "sp": 7,
+    "follows_aspd": true,
+    "effect": "sword wave at the target, slashing every enemy on its way for 373% ATK"
+   },
+   {
+    "name": "Blossom Dance",
+    "type": "attack",
+    "tags": [
+     "AoE"
+    ],
+    "sp": 16,
+    "cooldown": 4,
+    "effect": "dash 5 times around the target and pull enemies in, 430% ATK in total; a sakura field slows for 3 s; invincible while dancing"
+   },
+   {
+    "name": "Mirror Mind",
+    "type": "buff",
+    "sp": 30,
+    "cooldown": 40,
+    "effect": "50 s: attack speed +15%, CRIT +15, crit damage +15%"
+   },
+   {
+    "name": "Counter Stance",
+    "type": "attack",
+    "tags": [
+     "Single Target"
+    ],
+    "sp": 18,
+    "cooldown": 8,
+    "effect": "kneel 3 s; if hit, block and counter for 910% ATK to every enemy nearby and stun 3 s; if not hit, heal 30% of max HP"
+   },
+   {
+    "name": "Katana Mastery",
+    "type": "passive",
+    "effect": "Katana: ATK +15%, CRIT +20 (the numbers say it is on with no weapon too)"
+   },
+   {
+    "name": "Swift Step",
+    "type": "passive",
+    "effect": "Evasion +15, Attack Speed +15%"
+   },
+   {
+    "name": "Lingering Edge",
+    "type": "passive",
+    "effect": "Crit DMG +10%, ATK + 15% of your AGI"
+   }
+  ],
+  "Thief": [
+   {
+    "name": "Cross Rend",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Melee"
+    ],
+    "sp": 6,
+    "follows_aspd": true,
+    "effect": "cross-slash one target, 2 hits of 170% ATK each"
+   },
+   {
+    "name": "Venom Dash",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Ranged"
+    ],
+    "sp": 12,
+    "cooldown": 7,
+    "effect": "dash and strike for 200% ATK; on crit, dash again up to 6 times (first target first, then random nearby targets, range +90%)"
+   },
+   {
+    "name": "Umbral Strike",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Ranged"
+    ],
+    "sp": 16,
+    "cooldown": 6,
+    "effect": "shadow spikes forward in a line, hitting every enemy in the path for 500% ATK"
+   },
+   {
+    "name": "Fade",
+    "type": "buff",
+    "sp": 20,
+    "cooldown": 20,
+    "effect": "stealth for 8 s, monsters stop chasing; damage x1.5 while hidden"
+   },
+   {
+    "name": "Double Hit",
+    "type": "passive",
+    "effect": "melee weapon: 50% chance to double-strike on normal attacks"
+   },
+   {
+    "name": "Light Step",
+    "type": "passive",
+    "effect": "Evasion +20, Move Speed +15%"
+   },
+   {
+    "name": "Killer Instinct",
+    "type": "passive",
+    "effect": "Crit DMG +20%, attack speed +10%, ATK +20%"
+   }
+  ]
+ }
+}
