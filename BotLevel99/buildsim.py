@@ -613,3 +613,69 @@ def gear_from_reading(job, rd, equipped=None):
         notes.append('ค่าติดลบ (' + ', '.join(neg) + ') แปลว่าการ์ด EX ชุดเซ็ทที่เลือกว่าใส่อยู่ไม่ตรงกับในเกม '
                      'หรือมียา/บัฟค้างตอนอ่าน')
     return gear, notes
+
+
+def gear_from_worn(job, rd, equipped=None):
+    """What the worn gear adds, from the pieces read one by one in the Bag (Game.worn_gear): their options
+    added up, nothing guessed. The Stats screen read with them (Extras taken out) is then worked out from
+    those numbers and compared, line by line, so a mismatch shows instead of hiding in the gear.
+    equipped: {'cards': [...]} for cards worn (the bot only counts them). Returns (gear, notes, check)."""
+    worn = rd.get('worn') or {}
+    gear = {k: v for k, v in (worn.get('gear') or {}).items() if k in GEAR_KEYS}
+    notes = []
+    m = Model(job)
+    set_name, pieces = (worn.get('set') or [None, 0])[:2]
+    sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
+    set_e = sets.get(set_name, {}) if pieces >= 5 else {}
+    if set_name and pieces < 5:
+        notes.append(f'ใส่ {set_name} แค่ {pieces}/5 ชิ้น โบนัสเซ็ทยังไม่ติด')
+    cards = {c[0]: c[2] for c in all_cards(job)}
+    picked = [n for n in (equipped or {}).get('cards', []) if n in cards]
+    n_cards = worn.get('cards_worn')
+    if n_cards and len(picked) < n_cards:
+        notes.append(f'ใส่การ์ดอยู่ {n_cards} ใบ แต่เลือกไว้ {len(picked)} ใบ เลือกการ์ดที่ใส่ด้วย (บอทยังอ่านชื่อการ์ดไม่ได้)')
+    empty = [p['slot'] for p in worn.get('pieces', []) if p.get('empty')]
+    if empty:
+        notes.append('ช่องที่ไม่มีของหรืออ่านไม่ได้: ' + ', '.join(empty))
+    up = [{k: v for k, v in (BUFF_EFFECTS.get(b) or POTIONS.get(b) or {}).items() if k != 'level'}
+          for b in rd.get('buffs') or []]
+    if rd.get('buffs'):
+        notes.append('ตอนอ่านมีบัฟติดอยู่ (' + ', '.join(rd['buffs']) + ') ครั้งหน้าอย่ากดบัฟก่อนอ่าน')
+    g = {k: (v / 100 if k in ('atk_pct', 'aspd_pct', 'def_pen', 'dmg_pct') else v) for k, v in gear.items()}
+    e = combine(g, set_e, *(cards[n] for n in picked), *up)
+    check = []
+    stats = rd.get('stats') or {}
+    if stats and all(stats.get(s) for s in STAT_NAMES):
+        pn = m.panel(stats, e)
+        for row, key, tol in (('ATK', 'ATK', 2), ('ASPD', 'ASPD uncapped', 1), ('Crit Rate', 'Crit Rate', 1)):
+            seen = (rd.get('panel') or {}).get(row)
+            if seen is None:
+                continue
+            want = pn[key]
+            ok = (seen <= want < seen + 1) if row == 'ASPD' else abs(want - seen) <= tol   # ASPD shows rounded down
+            check.append({'row': row, 'screen': seen, 'items': round(want, 1), 'ok': bool(ok)})
+        cd = (rd.get('special') or {}).get('Crit DMG')
+        if cd is not None:
+            want = m.crit_dmg0 + e.get('crit_dmg', 0)
+            check.append({'row': 'Crit DMG', 'screen': cd, 'items': want, 'ok': abs(cd - want) <= 1})
+        for s in STAT_NAMES:
+            seen = (rd.get('bonus') or {}).get(s)
+            if seen is None:
+                continue
+            want = m.bonus[s] + e.get(s, 0)
+            check.append({'row': f'{s} bonus', 'screen': seen, 'items': want, 'ok': abs(seen - want) < 0.5})
+        pv = (rd.get('previews') or {}).get(m.c['main'])
+        if pv and pv.get('ATK'):
+            t = m._totals(stats, {s: e.get(s, 0) for s in STAT_NAMES})
+            main = m.c['main']
+            t2 = dict(t, **{main: t[main] + pv['add']})
+            raw = m._atk_raw(t2, {}) - m._atk_raw(t, {})
+            seen_pct = round(100 * (pv['ATK'] / raw / K_ATK - 1 - m.atk_pct0), 1)
+            want_pct = round(100 * e.get('atk_pct', 0), 1)
+            check.append({'row': f'ATK% (ลองกด {main} +{pv["add"]})', 'screen': seen_pct, 'items': want_pct,
+                          'ok': abs(seen_pct - want_pct) <= 1.5})
+        bad = [c for c in check if not c['ok']]
+        if bad:
+            notes.append('ไม่ตรงกับหน้า Stats: ' + ', '.join(f"{c['row']} เกม {c['screen']:g} / คิดจากของ {c['items']:g}"
+                                                              for c in bad))
+    return gear, notes, check

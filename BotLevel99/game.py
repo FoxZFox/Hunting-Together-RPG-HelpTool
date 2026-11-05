@@ -934,26 +934,31 @@ class Game:
         """A Stats tab position moved to where the window is now (see STATS_STR_X)."""
         return xy[0] + self.stats_dx, xy[1]
 
-    def read_stats_screen(self, preview=True):
-        """Everything Status & Skills > Stats shows, for the Build tab: base stats, the bonus beside each,
-        points left, the right-hand panel and Special Stats (stats_panel). With free points it also
-        previews +10..+30 on STR, DEX and AGI and reads the green deltas, pressing Clear after each:
-        that is what tells how much ATK% and attack speed % the worn gear gives. Never confirms.
-        None when the Stats tab did not open."""
+    def read_stats_screen(self, preview=True, remove_extras=True):
+        """Everything the Build tab needs from the game, with the gear on:
+        1. the buff bar (a buff or speed potion up changes the Stats screen: the player is asked not to
+           use any before reading, and what shows is noted so it can be taken out);
+        2. the Bag: the class, every worn piece's options one by one (worn_gear), and the cards worn;
+        3. Skills tab: the Extra passives slotted are taken out (remove_extras: the user asked for this,
+           2026-11-06), so the Stats screen shows the gear alone; their names are kept for putting back;
+        4. Stats tab: base stats, the bonus beside each, points left, the panel and Special Stats
+           (stats_panel), and with free points +10..+30 previews on STR, DEX and AGI, Clear after each.
+        Never confirms points. None when the Stats tab did not open."""
         import stats_panel
         reader = stats_panel.Reader()
         if not reader.ready():
             self.log('ไม่เจอแม่แบบตัวเลขของหน้า Stats (templates/stats_panel)')
             return None
-        # buffs and the speed potion now up count in the Stats screen too: note them to take them out
         active = []
         if self.to_hud():
             active = stats_panel.buffs(self.shot())
-        # the class: the formulas differ (a bow's main stat is DEX), and the Build tab may show another one
-        job = None
-        step('อ่านอาชีพจากกระเป๋า')
+        if active:
+            self.log('มีบัฟติดอยู่ตอนอ่าน: ' + ', '.join(active) + ' (ค่าจะเพี้ยน รอบัฟหมดแล้วอ่านใหม่ดีกว่า)')
+        job, worn = None, None
+        step('อ่านของที่ใส่อยู่จากกระเป๋า')
         if self.open_window(KEY_B, 'bag', MENU_BAG):
             job = self._read_job()
+            worn = self.worn_gear()
         self.to_hud()
         step('อ่านหน้า Stats')
         if not self.open_stats():
@@ -961,26 +966,125 @@ class Game:
             self.to_hud()
             return None
         try:
+            removed, before = [], [None] * 6
+            if remove_extras:
+                step('ถอด EX', 'แท็บ Skills')
+                self.tap(self.status_tab('Skills') or self.sx(STATUS_TAB_SKILLS), 1.5)
+                before = stats_panel.extras_slotted(self.shot())
+                removed = self.remove_extras()
+                back = self.status_tab('Stats', self.shot())
+                if back:
+                    self.tap(back, 1.2)
+                if not self.open_stats():
+                    self.log('กลับมาแท็บ Stats ไม่ได้หลังถอด EX')
+                    return None
             img = self.shot()
             values, points = self.read_stats(img)
             dx = self.stats_dx
             out = {'stats': values, 'points': points, 'bonus': reader.bonus(img, dx),
                    'panel': {k: v for k, (v, _) in reader.panel(img, dx).items()},
                    'special': reader.special(img, dx), 'previews': {}, 'job': job, 'buffs': active,
-                   'time': time.strftime('%Y-%m-%d %H:%M')}
+                   'time': time.strftime('%Y-%m-%d %H:%M'), 'worn': worn,
+                   'extras_removed': removed, 'extras_before': before, 'extras': [None] * 6}
             if preview and values and points:
                 self._preview_stats(reader, out, values, points)
-            # the Extra passives in their slots (Skills tab), so they are not taken for gear; then back to
-            # Stats, so the window opens there next time
-            self.tap(self.status_tab('Skills') or self.sx(STATUS_TAB_SKILLS), 1.5)
-            skills = self.shot()
-            out['extras'] = stats_panel.extras_slotted(skills)          # empty slots read as None anyway
-            back = self.status_tab('Stats', skills)
-            if back:
-                self.tap(back, 1.0)
+            if not remove_extras:
+                # the Extra passives in their slots, so they are not taken for gear; then back to Stats
+                self.tap(self.status_tab('Skills') or self.sx(STATUS_TAB_SKILLS), 1.5)
+                skills = self.shot()
+                out['extras'] = stats_panel.extras_slotted(skills)
+                back = self.status_tab('Stats', skills)
+                if back:
+                    self.tap(back, 1.0)
             return out
         finally:
             self.to_hud()
+
+    def worn_gear(self):
+        """Bag open: tap each worn slot, read the popup it opens (gear_reader), tap the slot again to
+        close it. The taps go on the lower left of each icon: the game puts a red X (takes the piece off)
+        on the top right of the open slot, and Unequip sits in the popup; neither is ever pressed.
+        {'pieces': [...], 'gear': totals for the Build tab, 'other': the rest, 'set': [name, pieces],
+        'cards_worn': n} or None when a popup did not behave."""
+        import gear_reader as gr
+        tpl = gr.load_popup_templates()
+        if not tpl['glyphs']:
+            self.log('ไม่เจอแม่แบบตัวอักษรของหน้าต่างของ (templates/gear_popup)')
+            return None
+        if gr.popup_box(self.shot()):
+            self.log('มีหน้าต่างของเปิดค้างอยู่ในกระเป๋า เลยไม่อ่านของทีละชิ้น')
+            return None
+        pieces = []
+        for name, xy in gr.SLOTS:
+            step('อ่านของที่ใส่อยู่', name)
+            self.tap(xy, 1.2)
+            img = self.shot()
+            if not gr.popup_box(img):
+                time.sleep(0.8)
+                img = self.shot()
+            if not gr.popup_box(img):
+                # an empty slot, or the tap missed: nothing is open, so nothing to close
+                self.log(f'กดช่อง {name} แล้วไม่มีหน้าต่างของขึ้น ข้ามช่องนี้ ({self._save("gear-slot")})')
+                pieces.append({'slot': name, 'empty': True})
+                continue
+            pieces.append(gr.read_popup(self.ocr, img, tpl, name))
+            self.tap(xy, 0.9)                           # the same slot again closes its popup
+            if gr.popup_box(self.shot()):
+                time.sleep(0.6)
+                if gr.popup_box(self.shot()):
+                    self.log(f'ปิดหน้าต่างของช่อง {name} ไม่ได้ หยุดอ่าน ({self._save("gear-popup")})')
+                    return None
+        worn = [p for p in pieces if not p.get('empty')]
+        gear, other = gr.gear_totals(worn)
+        set_name, n = gr.worn_set(worn)
+        unread = [f"{p['slot']}: {t[:30]}" for p in worn for t in p.get('unread', [])]
+        if unread:
+            self.log('อ่านบางบรรทัดของไม่ออก: ' + '; '.join(unread))
+        return {'pieces': pieces, 'gear': gear, 'other': other, 'set': [set_name, n],
+                'cards_worn': gr.cards_worn(self.shot())}
+
+    def remove_extras(self):
+        """Skills tab open: take every Extra passive out of its slot (tap the slot, then the chooser's
+        Remove), as the user asked (2026-11-06) so the Stats screen shows the gear alone. Only the button
+        OCR reads as "Remove" is pressed; the list below it would swap the passive. Returns the names
+        removed (from the chooser's "Equipped now: ..." line), in slot order."""
+        import gear_reader as gr
+        img = self.shot()
+        head = next((l for l in self.ocr.read(img, (900, 140, 360, 70), 2.0, 'gray')
+                     if 'extra' in l.text.lower()), None)
+        if head:
+            hx, hy = head.center                        # "Extra" over the 2 x 3 slots (2026-11-06)
+            slots = [(hx + dx, hy + dy) for dy in (126, 234, 342) for dx in (-54, 54)]
+        else:
+            import stats_panel
+            slots = list(stats_panel.EXTRA_SLOTS)
+        removed = []
+        for i, xy in enumerate(slots):
+            if gr.extra_empty(self.shot(), xy) is not False:
+                continue                                # empty, or no template to tell
+            self.tap(xy, 1.5)
+            img = self.shot()
+            top = self.ocr.read(img, (280, 12, 740, 56), 2.0, 'white')
+            if not any('choose' in l.text.lower() for l in top):
+                self.log(f'กดช่อง EX {i + 1} แล้วหน้าเลือก Passive ไม่ขึ้น ({self._save("ex-slot")})')
+                continue
+            now = self.ocr.text(img, (285, 78, 720, 26), 2.0, 'gray')
+            m = re.search(r'Equipped now:\s*(.+?)\s*[\u2014-]', now)
+            name = m.group(1).strip() if m else None
+            btn = next((l for l in top if l.text.strip().lower() == 'remove'), None)
+            if not btn:
+                self.log(f'ไม่เจอปุ่ม Remove ในช่อง EX {i + 1} ปิดหน้านี้แทน')
+                close = next((l for l in top if l.text.strip().lower() == 'x'), None)
+                if close:
+                    self.tap(close.center, 1.0)
+                continue
+            self.tap(btn.center, 1.3)
+            if gr.extra_empty(self.shot(), xy):
+                removed.append(name or f'ช่อง {i + 1}')
+                self.log(f'ถอด EX {name or ""} ออกจากช่อง {i + 1} แล้ว')
+            else:
+                self.log(f'กด Remove ช่อง EX {i + 1} แล้วช่องยังไม่ว่าง ({self._save("ex-remove")})')
+        return removed
 
     def _preview_stats(self, reader, out, values, points):
         """Stats tab open: +10..+30 on STR, DEX and AGI, read the green deltas, Clear after each."""

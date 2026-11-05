@@ -360,6 +360,13 @@ class Panel:
             return
         self.screen_read = rd
         p = rd['panel']
+        worn = rd.get('worn') or {}
+        if worn.get('pieces'):
+            log(f"อ่านของที่ใส่ {sum(not x.get('empty') for x in worn['pieces'])} ชิ้น"
+                + (f" · ชุด {worn['set'][0]} {worn['set'][1]}/5" if worn.get('set') and worn['set'][0] else '')
+                + (f" · การ์ด {worn['cards_worn']} ใบ" if worn.get('cards_worn') is not None else ''))
+        if rd.get('extras_removed'):
+            log('ถอด EX ออกแล้ว (ใส่คืนเองในแท็บ Skills): ' + ', '.join(rd['extras_removed']))
         log(f"อ่านหน้า Stats แล้ว: ATK {p.get('ATK')} · ASPD {p.get('ASPD')} · Crit {p.get('Crit Rate')}%"
             + (f" · ลองกด + {', '.join(rd['previews'])}" if rd['previews'] else ' · ไม่มีแต้มว่างให้ลองกด +'))
 
@@ -380,11 +387,17 @@ class Panel:
         eq = body.get('equipped') or {}
         equipped = {'set': str(eq.get('set') or ''), 'cards': [str(c) for c in eq.get('cards') or [] if c],
                     'extras': [str(x) for x in eq.get('extras') or [] if x]}
+        worn = rd.get('worn') or {}
         try:
-            gear, more = buildsim.gear_from_reading(job, rd, equipped)
+            if worn.get('gear'):                  # read piece by piece in the Bag: nothing to guess
+                gear, more, check = buildsim.gear_from_worn(job, rd, equipped)
+            else:
+                gear, more = buildsim.gear_from_reading(job, rd, equipped)
+                check = []
         except Exception as e:
             return None, f'คิดค่าชุดไม่สำเร็จ: {e}'
-        return {'gear': gear, 'notes': notes + more, 'reading': rd, 'job': job}, None
+        return {'gear': gear, 'notes': notes + more, 'reading': rd, 'job': job, 'check': check,
+                'worn': worn or None, 'extras_removed': rd.get('extras_removed') or []}, None
 
     def save_boss(self, values):
         """Save the [boss] section's values, keeping the comments in the file."""

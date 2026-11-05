@@ -313,13 +313,14 @@
             <summary>ของที่ใส่อยู่ให้อะไรบ้าง (ไม่ใส่ก็ได้ = คิดแบบไม่ใส่ของ)</summary>
             <p class="field-help">รวมออปของทุกชิ้นที่ใส่อยู่ เช่น แหวน Special ASPD +3 ใส่ 3 ในช่อง ASPD, อาวุธ Crit Rate 12 ใส่ 12 ในช่อง Crit Rate, ATK พื้นฐานของอาวุธใส่ในช่อง ATK</p>
             <div class="ab-read">
-              <p class="field-help"><b>หรือให้บอทอ่านจากหน้า Stats ในเกม:</b> หยุดบอทก่อน ใส่ชุดไว้ บัฟกับยาที่ติดอยู่ (Mirror Mind, Forest Pulse, Grace, Sacred Aegis, Battle Rally, ยาเร่งความเร็ว) บอทดูจากไอคอนบนจอแล้วหักออกให้เอง ถ้ามีแต้มว่าง บอทจะลองกด + ที่ STR, DEX, AGI แล้วกด Clear เพื่อดูว่าชุดให้ ATK% กับความเร็วเท่าไหร่ (ไม่กด Confirm) บอกด้วยว่าตอนอ่านใส่การ์ด EX และชุดเซ็ทอะไรอยู่ จะได้หักออก เหลือแค่ค่าของชุด</p>
+              <p class="field-help"><b>หรือให้บอทอ่านจากในเกม:</b> หยุดบอทก่อน ใส่ชุดไว้ <b>ห้ามกดบัฟ สกิลบัฟ (เช่น Mirror Mind) หรือกินยาเร่งก่อนกดอ่าน ถ้าเพิ่งกดไปให้รอจนบัฟหมด</b> บอทจะเปิดดูของที่ใส่ในกระเป๋าทีละชิ้น (กดช่องแล้วกดซ้ำเพื่อปิด ไม่กด Unequip) ถอด EX ที่ใส่อยู่ออกให้ (บอกชื่อไว้ให้ใส่คืนเองในแท็บ Skills) แล้วอ่านหน้า Stats ถ้ามีแต้มว่างจะลองกด + ที่ STR, DEX, AGI แล้วกด Clear (ไม่กด Confirm) ค่าชุดในช่องด้านล่างมาจากของทีละชิ้น แล้วเทียบกับหน้า Stats ให้ดูว่าตรงไหม ถ้าใส่การ์ดอยู่ให้เลือกการ์ดที่ใส่ในช่องการ์ดด้วย (บอทยังอ่านชื่อการ์ดไม่ได้)</p>
               <div class="ab-equipped" id="ab-equipped"></div>
               <div class="panel-actions">
                 <button class="btn btn-blue btn-small" id="ab-read" type="button">อ่านจากเกม</button>
                 <button class="btn btn-ghost btn-small" id="ab-read-again" type="button" hidden>คิดค่าชุดใหม่จากที่อ่านไว้</button>
                 <span class="form-msg" id="ab-read-msg" role="status"></span>
               </div>
+              <div class="ab-worn" id="ab-worn" hidden></div>
             </div>
             <div class="ab-gear" id="ab-gear"></div>
           </details>

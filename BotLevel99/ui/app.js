@@ -995,14 +995,47 @@ function abEquipped() {
   return { set: sel('set')[0] || '', extras: sel('extras'), cards: sel('cards') };
 }
 
+const AB_OPT = ([name, value, pct]) => `${name} +${value}${pct ? '%' : ''}`;
+
+function abShowWorn(res) {
+  const box = $('#ab-worn');
+  if (!res.worn?.pieces) {
+    box.hidden = true;
+    return;
+  }
+  const pieces = res.worn.pieces.map((p) => el('li', { class: 'slot' },
+    el('span', { class: 'slot-name', text: p.slot }),
+    el('span', { class: 'field-help', text: p.empty ? 'ไม่มีของ / อ่านไม่ได้'
+      : [...p.base, ...p.refine.map((o) => `ตีบวก ${AB_OPT(o)}`), ...p.special.map((o) => `★ ${AB_OPT(o)}`),
+        ...p.random].map((o) => (typeof o === 'string' ? o : AB_OPT(o))).join(' · ') })));
+  const [setName, n] = res.worn.set || [];
+  const rows = (res.check || []).map((c) => el('li', { class: 'slot' },
+    el('span', { class: 'slot-name', text: c.row }),
+    el('span', { class: 'slot-tag', 'data-ok': c.ok ? '1' : null,
+      text: `เกม ${c.screen} · คิดจากของ ${c.items}${c.ok ? '' : ' ✗'}` })));
+  box.replaceChildren(
+    slotList(`ของที่ใส่ ${res.worn.pieces.filter((p) => !p.empty).length} ชิ้น${setName ? ` · ${setName} ${n}/5` : ''}`
+      + `${res.worn.cards_worn != null ? ` · การ์ด ${res.worn.cards_worn}/8` : ''}`, pieces),
+    ...(res.extras_removed?.length ? [el('p', { class: 'form-msg', 'data-tone': 'bad',
+      text: `บอทถอด EX ออกให้แล้ว อย่าลืมใส่คืนในแท็บ Skills: ${res.extras_removed.join(', ')}` })] : []),
+    ...(rows.length ? [slotList('เทียบกับหน้า Stats (✗ = ไม่ตรง)', rows)] : []));
+  box.hidden = false;
+}
+
 async function abGearFromReading() {
   const res = await api('/api/autobuild/gear', { job: buildData().job, equipped: abEquipped() }).catch(() => null);
   if (!res?.ok) return setMsg('#ab-read-msg', res?.error || 'คิดค่าชุดไม่สำเร็จ', 'bad');
   if (res.job && res.job !== buildData().job) await saveBuild({ class: res.job });   // show the class that was read
   const slotted = res.reading.extras || [];
-  if (slotted.some(Boolean) && !abEquipped().extras.length) {        // fill the EX picks from the Skills tab
+  if (res.worn) {                       // read piece by piece: the bot took the EX out, the set is known
+    document.querySelectorAll('#ab-equipped [data-eq="extras"]').forEach((s) => { s.value = ''; });
+    const [setName, pieces] = res.worn.set || [];
+    const setSel = document.querySelector('#ab-equipped [data-eq="set"]');
+    if (setSel) setSel.value = pieces >= 5 && [...setSel.options].some((o) => o.value === setName) ? setName : '';
+  } else if (slotted.some(Boolean) && !abEquipped().extras.length) {  // fill the EX picks from the Skills tab
     document.querySelectorAll('#ab-equipped [data-eq="extras"]').forEach((s, i) => { s.value = slotted[i] || ''; });
   }
+  abShowWorn(res);
   for (const [k, v] of Object.entries(res.gear)) {
     const input = document.querySelector(`#ab-gear [data-gear="${k}"]`);
     if (input) input.value = v;
@@ -1017,8 +1050,8 @@ $('#ab-read').addEventListener('click', async () => {
   const before = (await api('/api/stats/screen').catch(() => null))?.reading?.time;
   const res = await api('/api/stats/screen', {}).catch(() => null);
   if (!res?.ok) return setMsg('#ab-read-msg', 'บอทกำลังทำอย่างอื่นอยู่ หยุดบอทก่อนแล้วลองใหม่', 'bad');
-  setMsg('#ab-read-msg', 'บอทกำลังอ่านหน้า Stats… (ราว 15–25 วิ)');
-  for (let i = 0; i < 90; i++) {
+  setMsg('#ab-read-msg', 'บอทกำลังอ่านของทีละชิ้น ถอด EX แล้วอ่านหน้า Stats… (ราว 40–60 วิ)');
+  for (let i = 0; i < 150; i++) {
     await new Promise((r) => setTimeout(r, 1000));
     const s = await api('/api/stats/screen').catch(() => null);
     if (s && !s.busy) {
