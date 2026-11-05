@@ -789,7 +789,8 @@ function buildData() {
   const extras = new Map((cfg.extras?.extras || []).map((e) => [e.name, e]));
   const allowed = (e) => !!e && e.class !== job && !e.class_only;
   const unlocked = (e) => allowed(e) && done.includes(e.class);
-  return { cfg, job, done, build: cfg.builds?.[job], cards, extras, allowed, unlocked };
+  const armor = new Map((cfg.armor_sets?.sets || []).map((s) => [s.name, s]));
+  return { cfg, job, done, build: cfg.builds?.[job], cards, extras, allowed, unlocked, armor };
 }
 
 function renderBuild() {
@@ -807,13 +808,20 @@ function renderBuild() {
   if (!b) return;
   const owned = (name) => d.cards.get(name)?.owned || 0;
   const exList = b.extras.filter((x) => d.allowed(d.extras.get(x.name)));
+  // armor sets: "now" picks from the easy ones, "full" may be a hard one (data/sets.json "obtain")
+  const sets = b.armor_sets || [];
+  const setNow = sets.find((x) => x.now) || sets.find((x) => d.armor.get(x.set)?.obtain === 'easy');
+  const setFull = sets.find((x) => x.full) || sets[0];
 
   // full: the top of each list
   const fullStats = b.stats.full;
-  $('#build-full').replaceChildren(
+  $('#build-full').replaceChildren(...[
     statBlock(fullStats),
+    setFull && slotList('ชุดเซ็ท', [setRow(d, setFull)]),
     slotList('Extra 6 ช่อง', exList.slice(0, 6).map((x) => extraRow(d, x.name, x.why))),
-    slotList('การ์ด 8 ใบ', b.cards.slice(0, 8).map((c) => cardRow(d, c.monster, c.why, c.gain))));
+    slotList('การ์ด 8 ใบ', b.cards.slice(0, 8).map((c) => cardRow(d, c.monster, c.why, c.gain))),
+    sets.length > 1 && slotList('ชุดเซ็ทอื่น', sets.filter((x) => x !== setFull).map((x) => setRow(d, x))),
+  ].filter(Boolean));
 
   // now: the best of what is owned / unlocked
   const exNow = exList.filter((x) => d.unlocked(d.extras.get(x.name))).slice(0, 6);
@@ -827,11 +835,13 @@ function renderBuild() {
   const why = (n) => b.cards.find((c) => c.monster === n) || { why: b.card_notes?.[n] };
   const hunt = b.cards.filter((c) => !owned(c.monster)).slice(0, 4);
   const nowStats = owned('Whitefang Sabertooth') && b.stats.whitefang ? b.stats.whitefang : b.stats.now;
-  $('#build-now').replaceChildren(
+  $('#build-now').replaceChildren(...[
     statBlock(nowStats),
+    setNow && slotList('ชุดเซ็ท', [setRow(d, setNow)]),
     slotList(`Extra ${exNow.length}/6 ช่อง`, exRows),
     slotList(`การ์ด ${cardNow.length}/8 ใบ`, cardNow.map((n) => cardRow(d, n, why(n).why, why(n).gain))),
-    hunt.length ? slotList('การ์ดที่ควรหาต่อ', hunt.map((c) => cardRow(d, c.monster, c.why, c.gain))) : null);
+    hunt.length && slotList('การ์ดที่ควรหาต่อ', hunt.map((c) => cardRow(d, c.monster, c.why, c.gain))),
+  ].filter(Boolean));
 
   $('#build-assumes').replaceChildren(...(b.assumes || []).map((t) => el('li', { text: t })));
   $('#build-sets').textContent = b.sets || '';
@@ -846,6 +856,17 @@ function statBlock(s) {
 
 function slotList(title, rows) {
   return el('div', { class: 'slot-group' }, el('p', { class: 'slot-title', text: title }), el('ol', { class: 'slots' }, ...rows));
+}
+
+const OBTAIN = { easy: 'หาง่าย', hard: 'หายาก', 'very hard': 'หายากมาก' };
+
+function setRow(d, x) {
+  const s = d.armor.get(x.set) || {};
+  return el('li', { class: 'slot' },
+    el('span', { class: 'slot-name', text: x.set }),
+    el('span', { class: 'slot-tag', 'data-ok': s.obtain === 'easy' ? '1' : null, text: OBTAIN[s.obtain] || '' }),
+    el('span', { class: 'slot-why', text: [x.why, x.gain ? `ดาเมจ ${x.gain}` : null].filter(Boolean).join(' · ') }),
+    s.bonus5 ? el('span', { class: 'slot-stats', text: `ครบ 5 ชิ้น: ${s.bonus5}` }) : null);
 }
 
 function extraRow(d, name, why) {

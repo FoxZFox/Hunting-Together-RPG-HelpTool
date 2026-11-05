@@ -222,6 +222,7 @@ class Panel:
             'builds': load_data('builds.json'),
             'cards': load_data('cards.json'),
             'extras': load_data('extras.json'),
+            'armor_sets': load_data('sets.json'),
             'classes': CLASSES,
         }
 

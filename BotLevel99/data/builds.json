@@ -58,6 +58,13 @@
    "Cliff Ram": "AGI +3 ใช้แทนเมื่อ ASPD ไม่ถึง 190",
    "Ice Golem": "LUK +5"
   },
+  "armor_sets": [
+   {"set": "Warrior Set", "now": true, "why": "ATK +10% รวมกองกับ ATK% อื่น (วัดแล้ว ATK +20% ได้จริง +13.9%) ใช้ได้ถ้าถอดชุดเดิมแล้ว ASPD ยังอยู่ 190", "gain": "+7%"},
+   {"set": "Gale", "why": "ASPD +3 ถ้าถอดชุดเดิมแล้ว ASPD ตกจาก 190 ใส่ชุดนี้ หรือใช้แทนการ์ด Fire Bat แล้วใส่การ์ด ATK แทน", "gain": "+3–5%"},
+   {"set": "Blood Lord Set", "full": true, "why": "ดาเมจ +10% และดูดเลือด 2% ของดาเมจ", "gain": "+10%"},
+   {"set": "Black Star Set", "why": "DEF Pen +20% มอนยิ่งเกราะหนา (บอส) ยิ่งคุ้ม ยังไม่ได้วัดสูตร DEF", "gain": "+5–15%"},
+   {"set": "Guardian Set", "why": "DEF +25, HP +12% ทนขึ้น ไม่เพิ่มดาเมจ"}
+  ],
   "sets": "เก็บการ์ดให้ครบแมพได้โบนัสถาวรโดยไม่ต้องใส่: Hellhound Ash Fields (ATK +1%, STR +3), Tiger Thicket (Attack Speed +1%, AGI +2), Scorpion Dunes (CRIT +1, LUK +2), Hyena Den (CRIT +1)"
  },
  "Samurai": {
@@ -119,6 +126,13 @@
    "Rabbit King": "สตัน 3% เข้ากับ Blade Training (+10% ใส่ศัตรูที่ติดสตัน)",
    "Sand Scorpion": "STR +3"
   },
+  "armor_sets": [
+   {"set": "Gale", "now": true, "why": "ASPD +3: ตอน Lv.81 ASPD 189 รวมชุดนี้แล้ว ถอดออกเหลือราว 186 ตีช้าลงราว 21% ใส่ไว้จนกว่าจะได้ ASPD 190 จากที่อื่น (แหวน ASPD, การ์ด Whitefang)", "gain": "+15–20%"},
+   {"set": "Blood Lord Set", "full": true, "why": "ดาเมจ +10% และดูดเลือด 2% ใช้แทน Gale เมื่อ ASPD ถึง 190 จากที่อื่นแล้ว", "gain": "+10%"},
+   {"set": "Black Star Set", "why": "DEF Pen +20% มอนยิ่งเกราะหนา (บอส) ยิ่งคุ้ม ยังไม่ได้วัดสูตร DEF", "gain": "+5–15%"},
+   {"set": "Warrior Set", "why": "ATK +10% รวมกองกับ ATK% อื่น ได้จริงราวครึ่งเดียว แต่เสีย ASPD +3 ของ Gale", "gain": "+5%"},
+   {"set": "Guardian Set", "why": "DEF +25, HP +12% ทนขึ้น ไม่เพิ่มดาเมจ"}
+  ],
   "sets": "เก็บการ์ดให้ครบแมพได้โบนัสถาวรโดยไม่ต้องใส่: Hellhound Ash Fields (ATK +1%, STR +3), Tiger Thicket (Attack Speed +1%, AGI +2), Scorpion Dunes (CRIT +1, LUK +2), Hyena Den (CRIT +1)"
  }
 }
