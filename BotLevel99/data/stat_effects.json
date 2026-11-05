@@ -1,0 +1,254 @@
+{
+ "read": "2026-11-05, Samurai Lv.99 after Reset Stats, no gear, cards or Extra, Auto off. Stats tab preview: + / +10 pressed and the green deltas read off the right panel (by eye), then Clear; nothing confirmed",
+ "class": "Samurai",
+ "level": 99,
+ "points": 1244,
+ "bonus": {
+  "STR": 18,
+  "AGI": 32,
+  "VIT": 17,
+  "INT": 8,
+  "DEX": 11,
+  "LUK": 10
+ },
+ "base_panel": {
+  "Max HP": 4103,
+  "Max SP": 442,
+  "ATK": 43,
+  "MATK": 13,
+  "DEF": 10,
+  "MDEF": 15,
+  "Evasion": 147,
+  "Cast Speed": 17,
+  "ASPD": 160,
+  "Crit Rate": 31,
+  "HP Regen": 23,
+  "Crit DMG": 60,
+  "DEF Pen": 0,
+  "MDEF Pen": 0,
+  "DMG Reduction": 2,
+  "Cooldown": 0,
+  "Move Speed": 4,
+  "SP Regen": 7,
+  "Lifesteal": 0
+ },
+ "notes": [
+  "every stat starts at 1; \"bonus\" is the blue number beside each stat (still there with no gear, cards or Extra)",
+  "sweeps: the panel delta with that one stat raised from 1 to \"at\" (base value, bonus not counted), the others at 1",
+  "nothing else moved: AGI does not change Evasion, VIT not DEF, INT not MDEF, and no stat moves a special stat",
+  "stats add up: AGI 99 with DEX swept gave the ASPD of each alone summed; STR/AGI/LUK/DEX 50 each gave ATK +131, Cast Speed +31, ASPD +11.3, Crit +15 (the single sweeps summed: about 130, 31, 11.3, 15)",
+  "the Samurai passives were still on (Skills tab): Lingering Edge gives ATK from AGI, Swift Step attack speed"
+ ],
+ "at": [
+  11,
+  21,
+  31,
+  41,
+  51,
+  61,
+  71,
+  81,
+  91,
+  99
+ ],
+ "sweeps": {
+  "STR": {
+   "ATK": [
+    15,
+    33,
+    53,
+    76,
+    100,
+    128,
+    157,
+    189,
+    223,
+    257
+   ]
+  },
+  "AGI": {
+   "ATK": [
+    2,
+    4,
+    5,
+    7,
+    9,
+    11,
+    12,
+    14,
+    16,
+    17
+   ],
+   "ASPD": [
+    1.9,
+    3.7,
+    5.5,
+    7.4,
+    9.2,
+    11.1,
+    12.9,
+    14.8,
+    16.6,
+    18.1
+   ]
+  },
+  "VIT": {
+   "Max HP": [
+    312,
+    624,
+    935,
+    1247,
+    1559,
+    1872,
+    2184,
+    2496,
+    2808,
+    3057
+   ],
+   "HP Regen": [
+    4,
+    7,
+    11,
+    14,
+    18,
+    21,
+    25,
+    28,
+    32,
+    35
+   ]
+  },
+  "INT": {
+   "Max SP": [
+    41,
+    81,
+    122,
+    162,
+    203,
+    244,
+    284,
+    325,
+    365,
+    398
+   ],
+   "MATK": [
+    18,
+    45,
+    80,
+    123,
+    175,
+    235,
+    303,
+    379,
+    463,
+    554
+   ]
+  },
+  "DEX": {
+   "ATK": [
+    2,
+    5,
+    7,
+    10,
+    12,
+    14,
+    17,
+    19,
+    21,
+    24
+   ],
+   "Cast Speed": [
+    7.5,
+    14.1,
+    20.3,
+    26,
+    31.5,
+    36.8,
+    41.9,
+    46.9,
+    51.7,
+    55.5
+   ],
+   "ASPD": [
+    0.4,
+    0.9,
+    1.3,
+    1.9,
+    2.3,
+    2.8,
+    3.2,
+    3.7,
+    4.1,
+    4.5
+   ]
+  },
+  "LUK": {
+   "ATK": [
+    2,
+    5,
+    7,
+    10,
+    12,
+    14,
+    17,
+    19,
+    21,
+    23
+   ],
+   "Crit Rate": [
+    3,
+    6,
+    9,
+    12,
+    15,
+    18,
+    21,
+    24,
+    27,
+    29
+   ]
+  }
+ },
+ "combos": {
+  "AGI 99 + DEX": {
+   "DEX": [
+    11,
+    31,
+    51,
+    71,
+    91,
+    97
+   ],
+   "ATK": [
+    20,
+    25,
+    29,
+    34,
+    39,
+    40
+   ],
+   "Cast Speed": [
+    7.5,
+    20.3,
+    31.5,
+    41.9,
+    51.7,
+    54.5
+   ],
+   "ASPD": [
+    18.6,
+    19.5,
+    20.4,
+    21.3,
+    22.3,
+    22.5
+   ]
+  },
+  "STR 50 + AGI 50 + LUK 50 + DEX 50": {
+   "ATK": 131,
+   "Cast Speed": 31,
+   "ASPD": 11.3,
+   "Crit Rate": 15
+  }
+ }
+}
