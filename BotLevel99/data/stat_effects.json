@@ -936,16 +936,238 @@
      "Crit Rate": 15
     }
    }
+  },
+  "Merchant": {
+   "read": "2026-11-05",
+   "level": 99,
+   "points": 1244,
+   "bonus": {
+    "STR": 35,
+    "AGI": 10,
+    "VIT": 7,
+    "INT": 8,
+    "DEX": 11,
+    "LUK": 25
+   },
+   "base_panel": {
+    "Max HP": 4313,
+    "Max SP": 442,
+    "ATK": 73,
+    "MATK": 13,
+    "DEF": 10,
+    "MDEF": 15,
+    "Evasion": 110,
+    "Cast Speed": 17,
+    "ASPD": 127,
+    "Crit Rate": 15,
+    "HP Regen": 22,
+    "Crit DMG": 50,
+    "DEF Pen": 0,
+    "MDEF Pen": 0,
+    "DMG Reduction": 2,
+    "Cooldown": 0,
+    "Move Speed": 4,
+    "SP Regen": 7,
+    "Lifesteal": 0
+   },
+   "sweeps": {
+    "STR": {
+     "ATK": [
+      21,
+      45,
+      70,
+      99,
+      129,
+      163,
+      198,
+      236,
+      277,
+      318
+     ]
+    },
+    "AGI": {
+     "ASPD": [
+      3.1,
+      6.2,
+      9.2,
+      12.3,
+      15.4,
+      18.5,
+      21.5,
+      24.6,
+      27.7,
+      30.2
+     ]
+    },
+    "VIT": {
+     "Max HP": [
+      361,
+      721,
+      1082,
+      1442,
+      1803,
+      2163,
+      2524,
+      2884,
+      3245,
+      3532
+     ],
+     "HP Regen": [
+      4,
+      8,
+      11,
+      15,
+      19,
+      23,
+      27,
+      30,
+      34,
+      38
+     ]
+    },
+    "INT": {
+     "Max SP": [
+      41,
+      81,
+      122,
+      162,
+      203,
+      244,
+      284,
+      325,
+      365,
+      398
+     ],
+     "MATK": [
+      18,
+      45,
+      80,
+      123,
+      175,
+      235,
+      303,
+      379,
+      463,
+      554
+     ]
+    },
+    "DEX": {
+     "ATK": [
+      3,
+      5,
+      8,
+      10,
+      13,
+      15,
+      18,
+      20,
+      22,
+      25
+     ],
+     "Cast Speed": [
+      7.5,
+      14.1,
+      20.3,
+      26,
+      31.5,
+      36.8,
+      41.9,
+      46.9,
+      51.7,
+      55.5
+     ],
+     "ASPD": [
+      0.8,
+      1.5,
+      2.3,
+      3.1,
+      3.9,
+      4.6,
+      5.4,
+      6.2,
+      6.9,
+      7.6
+     ]
+    },
+    "LUK": {
+     "ATK": [
+      3,
+      5,
+      8,
+      10,
+      13,
+      15,
+      18,
+      20,
+      22,
+      24
+     ],
+     "Crit Rate": [
+      3,
+      6,
+      9,
+      12,
+      15,
+      18,
+      21,
+      24,
+      27,
+      30
+     ]
+    }
+   },
+   "combos": {
+    "AGI 99 + DEX": {
+     "DEX": [
+      11,
+      31,
+      51,
+      71,
+      91,
+      97
+     ],
+     "ATK": [
+      3,
+      8,
+      13,
+      18,
+      22,
+      24
+     ],
+     "Cast Speed": [
+      7.5,
+      20.3,
+      31.5,
+      41.9,
+      51.7,
+      54.5
+     ],
+     "ASPD": [
+      31.0,
+      32.5,
+      34.0,
+      35.6,
+      37.1,
+      37.6
+     ]
+    },
+    "STR 50 + AGI 50 + LUK 50 + DEX 50": {
+     "ATK": 153,
+     "Cast Speed": 31,
+     "ASPD": 18.9,
+     "Crit Rate": 15
+    }
+   }
   }
  },
  "formulas": {
-  "note": "Ragnarok Online formulas fit all four classes (Samurai, Thief, Archer, Cleric) to the point. Every stat counts with its blue bonus; floor = round down",
-  "ATK": "(MAIN + floor(MAIN/10)^2 + floor(A/5) + floor(LUK/5)) x (1 + class ATK%) x about 1.025. MAIN is STR and A is DEX for melee; for a bow MAIN is DEX and A is STR. ATK% adds up: Katana Mastery 15, Killer Instinct 20, Hunter's Focus 20, Devotion 20, and an Extra counts in full (the Cleric with Hunter's Focus: 1.40). The Samurai also adds 15% of AGI (Lingering Edge)",
+  "note": "Ragnarok Online formulas fit all five classes measured (Samurai, Thief, Archer, Cleric, Merchant) to the point. Every stat counts with its blue bonus, which includes stats from passives (Heavy Lifter STR +10, Hunter's Focus DEX +10); floor = round down",
+  "ATK": "(MAIN + floor(MAIN/10)^2 + floor(A/5) + floor(LUK/5)) x (1 + class ATK%) x about 1.025. MAIN is STR and A is DEX for melee; for a bow MAIN is DEX and A is STR. ATK% adds up: Katana Mastery 15, Killer Instinct 20, Hunter's Focus 20, Devotion 20, Heavy Lifter 20, and an Extra counts in full (the Cleric with Hunter's Focus: 1.40). The Samurai also adds 15% of AGI (Lingering Edge)",
   "MATK": "(INT + floor(INT/5)^2) x (1 + MATK%) x about 1.03 (Devotion MATK +20%)",
-  "ASPD": "200 - W x (1 - AGI/250 - DEX/1000), within 0.3. W per class with its passives and Extras: Samurai 46.7, Thief 39.7, Archer 68.1, Cleric 55.2 (with Swift Step as an Extra); attack speed % shrinks W. Cap 190",
-  "Crit Rate": "7.7 + k x LUK + CRIT from passives, k = 0.3 (Thief 0.6). Samurai: Katana Mastery CRIT +20",
-  "Max HP": "H x (1 + VIT x about 0.0088); H with VIT 0: Samurai and Thief 3,541, Archer 2,753, Cleric 4,025",
-  "Max SP": "S x (1 + INT/100); S: Samurai 406, Cleric 421",
+  "ASPD": "200 - W x (1 - AGI/250 - DEX/1000), within 0.3. W per class with its passives and Extras: Thief 39.7, Samurai 46.7, Cleric 55.2 (with Swift Step as an Extra), Archer 68.1, Merchant 77.3; attack speed % shrinks W. Cap 190",
+  "Crit Rate": "7.2 to 7.7 + k x LUK + CRIT from passives, k = 0.3 (Thief 0.6). Samurai: Katana Mastery CRIT +20",
+  "Max HP": "H x (1 + VIT x about 0.0088); H with VIT 0: Archer 2,753, Samurai and Thief 3,541, Cleric and Merchant 4,025",
+  "Max SP": "S x (1 + INT/100); S: Samurai and Merchant 406, Cleric 421",
   "Cast Speed": "one falling curve of total DEX for every class: 17% at 12, 31.1% at 32, 38.4% at 44, 72.5% at 110, 86.9% at 142",
   "Crit DMG": "+50% before passives (Lingering Edge +10, Killer Instinct +20)",
   "stat cost": "floor((value - 1)/10) + 2 points for the next one (game.stat_cost)"

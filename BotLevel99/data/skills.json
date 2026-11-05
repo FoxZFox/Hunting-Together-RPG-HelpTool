@@ -227,6 +227,63 @@
     "type": "passive",
     "effect": "DEF +20, MDEF +20, ATK and MATK +20%"
    }
+  ],
+  "Merchant": [
+   {
+    "name": "Coin Smash",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Melee"
+    ],
+    "sp": 10,
+    "follows_aspd": true,
+    "effect": "slam the two-handed axe on one target for 320% ATK; kills with it have a 50% chance to drop 1-10 Gold"
+   },
+   {
+    "name": "Whirl Axe",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Melee"
+    ],
+    "sp": 16,
+    "follows_aspd": true,
+    "effect": "boomerang axe that curves past the target and returns, hitting going and coming back for 110% ATK each; range grows with level; Weaken 5 s; cooldown gets shorter with attack speed (min 1 s); kills have a 50% chance to drop 1-10 Gold"
+   },
+   {
+    "name": "Earthsplitter",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Melee"
+    ],
+    "sp": 22,
+    "cooldown": 5,
+    "effect": "charge, leap and smash the ground: cracks around you for 300% ATK; kills have a 50% chance to drop 1-10 Gold"
+   },
+   {
+    "name": "Battle Rally",
+    "type": "buff",
+    "sp": 30,
+    "cooldown": 30,
+    "effect": "Damage +10% and Max HP +15% for 120 s, for you and your party"
+   },
+   {
+    "name": "Bargain",
+    "type": "passive",
+    "effect": "shop prices 20% cheaper"
+   },
+   {
+    "name": "Sales Talk",
+    "type": "passive",
+    "effect": "sell items to shops for 20% more"
+   },
+   {
+    "name": "Heavy Lifter",
+    "type": "passive",
+    "effect": "STR +10, ATK +20%, Bag slots +20"
+   }
   ]
  }
 }
