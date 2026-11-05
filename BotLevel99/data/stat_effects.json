@@ -3,16 +3,18 @@
  "notes": [
   "every stat starts at 1; \"bonus\" is the blue number beside each stat (still there with nothing equipped)",
   "sweeps: the panel delta with that one stat raised from 1 to each value in \"at\" (bonus not counted), the others at 1",
-  "class passives stay on with no gear (Skills tab), so they are in these numbers"
+  "class passives stay on with no gear (Skills tab), so they are in these numbers; a passive that adds a stat (Archer Hunter's Focus DEX +10) shows in that stat's bonus"
  ],
  "findings": [
   "nothing else moves: AGI does not change Evasion, VIT not DEF, INT not MDEF, and no stat moves a special stat",
   "stats add up: AGI 99 with DEX swept gives each alone summed; four stats at 50 give their single sweeps summed",
-  "ATK from STR, DEX and LUK is one formula for every class, times the class ATK% passive: Samurai / 1.15 (Katana Mastery) and Thief / 1.20 (Killer Instinct) give the same STR curve (223.5 and 224.2 at 99); it grows from about 1.3 raw ATK per point at first to 3.7 near 99",
-  "ASPD: AGI shrinks the gap to 200 by 0.46% of that gap per point (99 AGI: 45.3% Samurai, 45.6% Thief), DEX by a quarter of that; the gap itself differs by class (all stats 1: Samurai 40, Thief 34)",
-  "Crit Rate = about 7.5 + k x (LUK + bonus) + passives: k is 0.3 for Samurai and 0.6 for Thief, the one real class difference found; Samurai adds Katana Mastery CRIT +20",
-  "Crit DMG starts at +50% (Samurai +60 with Lingering Edge, Thief +70 with Killer Instinct); Evasion starts at 132 (Swift Step +15, Light Step +20); Move Speed +4% (Light Step +15%)",
-  "VIT: Max HP +31.2 and HP Regen +0.36 per point; INT: Max SP +4.06 per point, MATK grows (1.8 then 11.4 per point); DEX: Cast Speed +0.75% falling to +0.48% per point"
+  "ATK: the main stat (STR for Samurai and Thief, DEX for the Archer) follows one growing curve, about 1.3 raw ATK per point at first and 3.7 near 99; the Archer's DEX adds 0.56 per point on top. Everything is times the class ATK% passive: Samurai x1.15 (Katana Mastery), Thief x1.20 (Killer Instinct), Archer x1.22 (Hunter's Focus). The other stats add about 0.21 raw ATK per point (DEX and LUK for melee, STR and LUK for the Archer)",
+  "ASPD: AGI 99 shrinks the gap to 200 by 45% for every class and DEX 99 by 11%; the gap with all stats at 1 is Samurai 40, Thief 34, Archer 58",
+  "Crit Rate = about 7.5 + k x (LUK + bonus) + passives: k is 0.3 for Samurai and Archer, 0.6 for Thief; Samurai adds Katana Mastery CRIT +20",
+  "Max HP per VIT: 31.2 for Samurai and Thief, 23.3 for the Archer; HP Regen about 0.35 per VIT",
+  "Cast Speed follows total DEX (stat + bonus) on one falling curve: the Samurai at DEX 44 has the Archer's base 38.4%",
+  "Crit DMG starts at +50% (Samurai +60 with Lingering Edge, Thief +70 with Killer Instinct); Evasion starts at 132 for Samurai and Thief before Swift Step +15 / Light Step +20 (Archer 125); Move Speed +4% (Light Step +15%)",
+  "INT is the same for all three: Max SP +4.06 per point, MATK growing (1.8 then 11.4 per point)"
  ],
  "at": [
   11,
@@ -480,6 +482,228 @@
      "Cast Speed": 31,
      "ASPD": 9.7,
      "Crit Rate": 30
+    }
+   }
+  },
+  "Archer": {
+   "read": "2026-11-05",
+   "level": 99,
+   "points": 1244,
+   "bonus": {
+    "STR": 3,
+    "AGI": 25,
+    "VIT": 7,
+    "INT": 8,
+    "DEX": 43,
+    "LUK": 20
+   },
+   "base_panel": {
+    "Max HP": 2940,
+    "Max SP": 442,
+    "ATK": 88,
+    "MATK": 13,
+    "DEF": 10,
+    "MDEF": 15,
+    "Evasion": 125,
+    "Cast Speed": 38.4,
+    "ASPD": 142,
+    "Crit Rate": 14,
+    "HP Regen": 15,
+    "Crit DMG": 50,
+    "DEF Pen": 0,
+    "MDEF Pen": 0,
+    "DMG Reduction": 2,
+    "Cooldown": 0,
+    "Move Speed": 4,
+    "SP Regen": 7,
+    "Lifesteal": 0
+   },
+   "sweeps": {
+    "STR": {
+     "ATK": [
+      3,
+      5,
+      7,
+      10,
+      12,
+      15,
+      17,
+      20,
+      22,
+      25
+     ]
+    },
+    "AGI": {
+     "ASPD": [
+      2.7,
+      5.4,
+      8.1,
+      10.8,
+      13.5,
+      16.1,
+      18.9,
+      21.5,
+      24.2,
+      26.4
+     ]
+    },
+    "VIT": {
+     "Max HP": [
+      233,
+      466,
+      700,
+      932,
+      1166,
+      1399,
+      1632,
+      1865,
+      2098,
+      2285
+     ],
+     "HP Regen": [
+      3,
+      7,
+      10,
+      13,
+      16,
+      19,
+      22,
+      26,
+      29,
+      32
+     ]
+    },
+    "INT": {
+     "Max SP": [
+      41,
+      81,
+      122,
+      162,
+      203,
+      244,
+      284,
+      325,
+      365,
+      398
+     ],
+     "MATK": [
+      18,
+      45,
+      80,
+      123,
+      175,
+      235,
+      303,
+      379,
+      463,
+      554
+     ]
+    },
+    "DEX": {
+     "ATK": [
+      23,
+      49,
+      78,
+      108,
+      142,
+      177,
+      215,
+      256,
+      299,
+      342
+     ],
+     "Cast Speed": [
+      5.8,
+      11.2,
+      16.5,
+      21.5,
+      25.5,
+      31.2,
+      35.9,
+      40.5,
+      45.0,
+      48.5
+     ],
+     "ASPD": [
+      0.7,
+      1.4,
+      2.0,
+      2.7,
+      3.4,
+      4.0,
+      4.7,
+      5.4,
+      6.1,
+      6.6
+     ]
+    },
+    "LUK": {
+     "ATK": [
+      3,
+      5,
+      7,
+      10,
+      12,
+      15,
+      17,
+      20,
+      22,
+      23
+     ],
+     "Crit Rate": [
+      3,
+      6,
+      9,
+      12,
+      15,
+      18,
+      21,
+      24,
+      27,
+      29
+     ]
+    }
+   },
+   "combos": {
+    "AGI 99 + DEX": {
+     "DEX": [
+      11,
+      31,
+      51,
+      71,
+      91,
+      97
+     ],
+     "ATK": [
+      23,
+      78,
+      142,
+      215,
+      299,
+      340
+     ],
+     "Cast Speed": [
+      5.8,
+      16.5,
+      25.5,
+      35.9,
+      45.0,
+      47.5
+     ],
+     "ASPD": [
+      27.1,
+      28.5,
+      29.8,
+      31.1,
+      32.5,
+      32.9
+     ]
+    },
+    "STR 50 + AGI 50 + LUK 50 + DEX 50": {
+     "ATK": 165,
+     "Cast Speed": 26,
+     "ASPD": 16.5,
+     "Crit Rate": 15
     }
    }
   }

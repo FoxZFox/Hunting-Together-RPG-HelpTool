@@ -111,6 +111,69 @@
     "type": "passive",
     "effect": "Crit DMG +20%, attack speed +10%, ATK +20%"
    }
+  ],
+  "Archer": [
+   {
+    "name": "Echo Arrow",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Ranged"
+    ],
+    "sp": 8,
+    "follows_aspd": true,
+    "effect": "fire 2 quick arrows at one target, 200% ATK each"
+   },
+   {
+    "name": "Skyfall Volley",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Ranged"
+    ],
+    "sp": 15,
+    "cooldown": 1.5,
+    "effect": "arrow rain around the target, 8 hits totalling 150% ATK"
+   },
+   {
+    "name": "Emerald Lance",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Ranged"
+    ],
+    "sp": 20,
+    "cooldown": 6,
+    "effect": "kneel, charge and fire a piercing spiral arrow in a line, hitting every enemy in its path for 480% ATK"
+   },
+   {
+    "name": "Gale Step",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Ranged"
+    ],
+    "sp": 15,
+    "cooldown": 5,
+    "effect": "backflip shooting the target for 270% ATK, knocking enemies back 3 tiles (not Leaders), then move 30% faster for 1.5 s"
+   },
+   {
+    "name": "Forest Pulse",
+    "type": "buff",
+    "sp": 35,
+    "cooldown": 20,
+    "effect": "AGI +12% and DEX +12% for 240 s"
+   },
+   {
+    "name": "Hunter's Focus",
+    "type": "passive",
+    "effect": "DEX +10, ATK +20%"
+   },
+   {
+    "name": "Far Horizon",
+    "type": "passive",
+    "effect": "bow: longer attack range and damage +10%"
+   }
   ]
  }
 }
