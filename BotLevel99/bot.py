@@ -200,8 +200,9 @@ class Bot:
 
         [boss] direct_join (default on): open the new server's link from inside the game. Roblox
         then leaves the old server by itself, as a teleport does (the game saves on leaving either
-        way), which skips the Leave menu and the app's home page. When the link does nothing the
-        bot leaves through the Roblox menu and joins as before."""
+        way), which skips the Leave menu and the app's home page. A server that does not take us
+        (the link does nothing in game, or Roblox drops back to its home page) is swapped for
+        another; after two such links in game the bot leaves through the Roblox menu first."""
         log(f'{why} → ย้ายห้อง')
         st = self.status
         st['hops'] += 1
@@ -212,6 +213,31 @@ class Bot:
             and not app_page(self.game.shot())
         if not direct:
             self._leave()
+        ignored = 0
+        for attempt in range(3):
+            url = self._pick_url(boss)
+            if direct:
+                ok = self._join(url, from_game=True)
+                if ok is None:                  # still on the old server: this one is full or gone
+                    ignored += 1
+                    if ignored >= 2:
+                        log('เปิดลิงก์ห้องใหม่จากในเกม 2 ห้องแล้วไม่ย้าย → ออกผ่านเมนูแล้วเข้าห้องอื่น')
+                        direct = False
+                        self._leave()
+                    else:
+                        log('เปิดลิงก์ห้องใหม่จากในเกมแล้วไม่ย้ายห้อง (ห้องอาจเต็มหรือปิดแล้ว) → ลองห้องอื่น')
+                    continue
+            else:
+                ok = self._join(url, give_up_s=45)
+            if ok or self.stop_event.is_set():
+                return ok
+            log('เข้าห้องนี้ไม่ได้ (Roblox เด้งกลับหน้าแอป) → ลองห้องอื่น')
+            direct = False                      # from Roblox's own page now
+        return False
+
+    def _pick_url(self, boss):
+        """The link of the next server to try (see hop), or the plain game link (a random server)."""
+        st = self.status
         server = None
         step('ดึงรายชื่อห้อง')
         try:
@@ -226,6 +252,7 @@ class Bot:
                     log(f'ไปห้องที่จำเวลาไว้: {boss} จะเกิดในอีก {self.timed:.0f} วิ '
                         f'(ย้ายห้องใช้ประมาณ {self.servers.travel:.0f} วิ)')
                 else:
+                    self.timed = None
                     skip = cfg.get('server_skip', [0, 9])
                     server = self.servers.pick(cfg.get('server_pick', 'fewest'), (min(skip), max(skip)))
                     if server and server.get('playing', 0) < self.servers.min_players:
@@ -236,18 +263,10 @@ class Bot:
         if server:
             log(f'เข้าห้องที่มีคน {server["playing"]}/{server["maxPlayers"]} คน')
             step('เข้าห้องใหม่', f'{server["playing"]}/{server["maxPlayers"]} คน' + (' (ตามเวลา)' if self.timed else ''))
-            url = self.servers.join_url(server)
-        else:
-            if self.servers:
-                self.servers.current = None     # a random server: its id is unknown
-            url = self.cfg['bot']['join_url']
-        if direct:
-            ok = self._join(url, from_game=True)
-            if ok is not None:
-                return ok
-            log('เปิดลิงก์ห้องใหม่จากในเกมแล้วไม่ย้ายห้อง → ออกผ่านเมนูแล้วเข้าใหม่')
-            self._leave()
-        return self._join(url)
+            return self.servers.join_url(server)
+        if self.servers:
+            self.servers.current = None         # a random server: its id is unknown
+        return self.cfg['bot']['join_url']
 
     def _leave(self):
         """Leave through the Roblox menu (the game saves); force-stop Roblox when that fails."""
@@ -255,11 +274,12 @@ class Bot:
             self.dev.stop_roblox()
             self.wait(3)
 
-    def _join(self, url, from_game=False):
+    def _join(self, url, from_game=False, give_up_s=None):
         """Open a roblox:// link and wait (up to 3 minutes) until the game is playable.
         from_game: the link is opened while still in a server. Until something other than that
         game's HUD shows, its HUD is not taken for the new server; None when nothing changes within
-        12 s (Roblox did not act on the link).
+        12 s (Roblox did not act on the link). give_up_s: False once Roblox has sat on its own home
+        page that long with the link sent again every 20 s (the server will not take us).
 
         As soon as a join has loaded the game shows a Skip button over its intro camera:
         pressing it is the earliest sign we are in, and skips the camera swing too. When boss
@@ -271,6 +291,7 @@ class Bot:
         end = time.time() + 180
         img = hud_since = None
         gone = not from_game                    # has the old server's screen gone yet?
+        on_app_since = None
         other_since = None                      # from_game: since when no HUD has shown
         while time.time() < end:
             if self.wait(0.5 if not gone else 1):
@@ -296,11 +317,16 @@ class Bot:
                         continue
                     log(f'ออกจากห้องเดิมแล้ว ({time.time() - sent:.1f} วิหลังเปิดลิงก์)')
                 if app_page(img):
+                    on_app_since = on_app_since or time.time()
+                    if give_up_s and time.time() - on_app_since > give_up_s:
+                        log(f'Roblox อยู่หน้าแอป {give_up_s} วิแล้วยังเข้าห้องนี้ไม่ได้')
+                        return False
                     if time.time() - sent > 20:
                         # a cold start can drop the link and leave Roblox on its own home page
                         self.dev.open_url(url)
                         sent = time.time()
                     continue
+                on_app_since = None
                 skip = find(img, 'skip_btn')[1]
                 if skip:
                     g.tap(skip, 1.0)

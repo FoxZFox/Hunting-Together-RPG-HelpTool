@@ -116,6 +116,8 @@ TEMPLATE_REGIONS = {
     'card_obtained': (530, 70, 220, 65),  # "Obtained!" over a new card; it closes by itself after ~5 s
     'skip_btn': (540, 600, 200, 100),     # "Skip" over the intro camera, shown for ~3 s as soon as a join has loaded
     'you_died': (380, 145, 180, 80),      # "You Died" window: the player was killed (the boss's badge goes too)
+    'android_statusbar': (1150, 0, 130, 40),  # wifi / signal / battery: Android's status bar is over the game
+    'roblox_logo': (0, 15, 140, 115),     # Roblox's own logo button, top left in game (y 50; ~86 under the bar)
 }
 TEMPLATES = {name: cv2.imread(os.path.join(HERE, 'templates', name + '.png'))
              for name in TEMPLATE_REGIONS}
@@ -184,6 +186,18 @@ def find(img, name, threshold=0.82, scales=(1.0,), region=None):
 
 def seen(img, name, threshold=0.82, region=None):
     return find(img, name, threshold, region=region)[1] is not None
+
+
+def statusbar_shown(img):
+    """Android's status bar shows over the game (landscape only: Roblox's own pages always have it).
+    Roblox then lays out its top UI ~36 px lower and shrinks centred windows, so the bot's fixed positions
+    miss: on 2026-11-06 an open Adventure Book read as 'unknown' for 80 s and the Leave menu was not found.
+    1.00 with the bar, 0.18 without. Only counts in game: Roblox's "Joining server" screen shows the bar
+    as well, and hides it by itself once the game is in."""
+    if img.shape[1] < img.shape[0] or not seen(img, 'android_statusbar', 0.8):
+        return False
+    _, xy = find(img, 'roblox_logo', 0.9)        # in game, pushed down (the join's loading screen shows
+    return xy is not None and xy[1] > 70         # the bar too, but no logo: nothing to fix there)
 
 
 def auto_battle(img):
@@ -492,7 +506,23 @@ class Game:
     def shot(self):
         self.img = self.dev.screenshot()
         self.img_at = time.time()
+        if statusbar_shown(self.img) and time.time() - getattr(self, '_statusbar_fixed', 0) > 20:
+            self._statusbar_fixed = time.time()
+            self.fix_statusbar()
+            self.img = self.dev.screenshot()
+            self.img_at = time.time()
         return self.img
+
+    def fix_statusbar(self):
+        """Pull Android's notification shade down and back up: the window goes back to Roblox, which
+        hides the system bars again (it had them shown after some joins, 2026-11-06)."""
+        self.log('แถบสถานะของ Android โผล่ทับเกม (ปุ่มในเกมเลื่อนลง) → ดึงแถบแจ้งเตือนลงแล้วเก็บ ให้เกมกลับมาเต็มจอ')
+        self.dev.shell('cmd statusbar expand-notifications')
+        time.sleep(0.8)
+        self.dev.shell('cmd statusbar collapse')
+        time.sleep(1.0)
+        if statusbar_shown(self.dev.screenshot()):
+            self.log(f'แถบสถานะยังไม่หาย ({self._save("statusbar")})')
 
     def state(self):
         return screen_state(self.shot())
