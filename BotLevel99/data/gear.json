@@ -1,13 +1,15 @@
 {
- "read": "2026-11-05, the user's screenshots of a weapon's option lists, with their notes on tiers",
+ "read": "2026-11-05, the user's screenshots of the option lists of a weapon and of armor, with their notes on tiers",
  "notes": [
-  "a weapon rolls 1 Special and 3 Random stats; a Tier VI weapon rolls 4 Random",
+  "every piece rolls 1 Special and 3 Random stats; a Tier VI piece rolls 4 Random",
   "Random stats never repeat on one item",
-  "Tier VI can roll every option listed; below VI only the ones without only_vi (no Random ATK, MATK, Melee DMG, Ranged DMG, Drop Rate or EXP, and no Special Cast Speed, Crit DMG, Single Skill DMG or AoE Skill DMG)",
-  "ranges as the game lists them (Crit Rate is shown without %); not yet known whether they change with tier or +upgrade"
+  "Tier VI can roll every option listed; below VI only the ones without only_vi",
+  "ranges as the game lists them (weapon Crit Rate and armor Special Move Speed are shown without %); not yet known whether they change with tier or +upgrade",
+  "the equipment panel calls Helm, Mask and Armor 'Upper Head', 'Mid Head' and 'Body'"
  ],
  "slots": {
   "Weapon": {
+   "pieces": ["Weapon"],
    "special_count": 1,
    "random_count": {"I-V": 3, "VI": 4},
    "special": [
@@ -33,6 +35,29 @@
     {"stat": "Ranged DMG", "min": 3, "max": 5, "unit": "%", "only_vi": true},
     {"stat": "Drop Rate", "min": 3, "max": 5, "unit": "%", "only_vi": true},
     {"stat": "EXP", "min": 3, "max": 5, "unit": "%", "only_vi": true}
+   ]
+  },
+  "Armor": {
+   "pieces": ["Helm", "Mask", "Armor", "Cloak", "Boots"],
+   "special_count": 1,
+   "random_count": {"I-V": 3, "VI": 4},
+   "special": [
+    {"stat": "HP %", "min": 4, "max": 6, "unit": "%"},
+    {"stat": "DEF %", "min": 6, "max": 12, "unit": "%"},
+    {"stat": "DMG Reduction", "min": 4, "max": 6, "unit": "%"},
+    {"stat": "Move Speed", "min": 6, "max": 12},
+    {"stat": "SP Cost", "min": -6, "max": -4, "unit": "%"},
+    {"stat": "Potion Heal", "min": 10, "max": 14, "unit": "%"}
+   ],
+   "random": [
+    {"stat": "HP", "min": 100, "max": 200},
+    {"stat": "VIT", "min": 5, "max": 10},
+    {"stat": "DEF", "min": 6, "max": 10},
+    {"stat": "MDEF", "min": 6, "max": 10},
+    {"stat": "Evasion", "min": 8, "max": 15},
+    {"stat": "Move Speed", "min": 3, "max": 3, "unit": "%", "only_vi": true},
+    {"stat": "Skill DMG Resist", "min": 3, "max": 5, "unit": "%", "only_vi": true},
+    {"stat": "Normal Hit Resist", "min": 3, "max": 5, "unit": "%", "only_vi": true}
    ]
   }
  }
