@@ -99,6 +99,10 @@ BUFF_EFFECTS = {
     'Battle Rally': {},
 }
 
+# ASPD_NOTE: attack speed % sources multiply: each shrinks the gap to 200 by (1 - its %). Adding them up
+# missed the user's Samurai by 4 ASPD (2026-11-06: 5 sources, 179 seen, 183 added up, 178.9 multiplied; the AGI
+# previews +3.8 / +0.6 matched too). The class W keeps the class's own sources inside.
+
 GEAR_KEYS = ('atk', 'atk_pct', 'aspd', 'aspd_pct', 'crit', 'crit_dmg', 'def_pen', 'dmg_pct',
              'STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK')
 
@@ -182,7 +186,7 @@ class Model:
         self.matk_x = p['MATK'] / ((1 + self.c.get('matk_pct', 0)) * K_MATK) - self._matk_raw(self._totals(bare, {}))
         gap = 200 - p['ASPD']
         t = self._totals(bare, {'DEX': less.get('DEX', 0)})
-        own = self.c['aspd_pct'] + less.get('aspd_pct', 0)
+        own = 1 - (1 - self.c['aspd_pct']) * (1 - less.get('aspd_pct', 0))
         self.W = gap / (1 - own) / (1 - t['AGI'] / 250 - t['DEX'] / 1000)
         self.crit0 = p['Crit Rate'] - self.c['crit_k'] * self._totals(bare, {})['LUK']
         self.cast0 = p['Cast Speed'] - cast_from_dex(seen['DEX'])
@@ -212,8 +216,8 @@ class Model:
         atk = (self._atk_raw(t, e) + self.atk_x) * (1 + self.atk_pct0 + e.get('atk_pct', 0)) * K_ATK
         matk = (self._matk_raw(t) + self.matk_x + e.get('matk', 0)) * (1 + self.c.get('matk_pct', 0)
                                                                          + e.get('matk_pct', 0)) * K_MATK
-        p = self.c['aspd_pct'] + e.get('aspd_pct', 0)
-        aspd = 200 - self.W * max(0.0, 1 - p) * (1 - t['AGI'] / 250 - t['DEX'] / 1000) + e.get('aspd', 0)
+        keep = (1 - self.c['aspd_pct']) * (1 - e.get('aspd_pct', 0))
+        aspd = 200 - self.W * keep * (1 - t['AGI'] / 250 - t['DEX'] / 1000) + e.get('aspd', 0)
         crit = self.crit0 + self.c['crit_k'] * t['LUK'] + e.get('crit', 0)
         cast = self.cast0 + cast_from_dex(t['DEX']) + e.get('cast', 0)
         return {'ATK': round(atk), 'MATK': round(matk), 'ASPD': round(min(190.0, aspd), 1),
@@ -271,6 +275,8 @@ def combine(*effects):
                     d[kk] = d.get(kk, 0) + vv
             elif k == 'dmg_mult':
                 out[k] = out.get(k, 1) * v
+            elif k == 'aspd_pct':                     # each source shrinks the gap on its own (see ASPD_NOTE)
+                out[k] = 1 - (1 - out.get(k, 0)) * (1 - v)
             else:
                 out[k] = out.get(k, 0) + v
     return out
@@ -536,18 +542,20 @@ def gear_from_reading(job, rd, equipped=None):
         gear['atk'] = round(flat - eq.get('atk', 0))
     gear['atk_pct'] = round(100 * (p_atk - m.atk_pct0 - eq.get('atk_pct', 0)), 1)
     agi = pv.get('AGI', {})
-    p_spd = m.c['aspd_pct'] + eq.get('aspd_pct', 0)
+    keep = (1 - m.c['aspd_pct']) * (1 - eq.get('aspd_pct', 0))       # what is known to shrink the gap
+    seen_keep = keep
     if pan.get('ASPD') and pan['ASPD'] >= 190:
         notes.append('ASPD ตอนอ่านตันที่ 190 แล้ว บอกไม่ได้ว่าชุดให้ความเร็วเกินมาเท่าไหร่')
     elif agi.get('ASPD'):
         grown = int((round(t['AGI'] / (1 + pct.get('AGI', 0))) + agi['add']) * (1 + pct.get('AGI', 0)))
-        p_spd = 1 - agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
+        seen_keep = agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
     else:
         notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
     if pan.get('ASPD') and pan['ASPD'] < 190:          # at the cap the flat part cannot be told either
-        expect = 200 - m.W * (1 - p_spd) * (1 - t['AGI'] / 250 - t['DEX'] / 1000)
+        expect = 200 - m.W * seen_keep * (1 - t['AGI'] / 250 - t['DEX'] / 1000)
         gear['aspd'] = round(pan['ASPD'] - expect - eq.get('aspd', 0), 1)
-    gear['aspd_pct'] = round(100 * (p_spd - m.c['aspd_pct'] - eq.get('aspd_pct', 0)), 1)
+    seen_pct = round(100 * (1 - seen_keep / keep), 1)
+    gear['aspd_pct'] = 0.0                            # gear cannot give attack speed % (data/gear.json)
     if pan.get('Crit Rate') is not None:
         gear['crit'] = round(pan['Crit Rate'] - (m.crit0 + m.c['crit_k'] * t['LUK']) - eq.get('crit', 0), 1)
     if sp.get('Crit DMG') is not None:
@@ -557,13 +565,13 @@ def gear_from_reading(job, rd, equipped=None):
     if equipped.get('extras'):
         notes.append(f"หัก EX ที่ใส่อยู่ออกแล้ว: {', '.join(equipped['extras'])}")
     # gear cannot give these (data/gear.json): what shows is cards or Extras not taken out
-    if gear.get('aspd_pct', 0) > 1.5:
-        notes.append(f"ชุดให้ Attack Speed % ไม่ได้ (แหวนให้ ASPD เป็นตัวเลขเท่านั้น) ที่เห็น +{gear['aspd_pct']}% "
+    if seen_pct > 1.5:
+        notes.append(f"ชุดให้ Attack Speed % ไม่ได้ (แหวนให้ ASPD เป็นตัวเลขเท่านั้น) ที่เห็น +{seen_pct}% "
                      'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
     if gear.get('atk_pct', 0) > 12:
         notes.append(f"ชุดให้ ATK% ได้ราว 10% เท่านั้น (Special ของอาวุธ) ที่เห็น +{gear['atk_pct']}% "
                      'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
-    neg = [k for k in ('atk', 'atk_pct', 'aspd_pct', 'crit', 'crit_dmg') if gear.get(k, 0) < -2]
+    neg = [k for k in ('atk', 'atk_pct', 'crit', 'crit_dmg') if gear.get(k, 0) < -2]
     if neg:
         notes.append('ค่าติดลบ (' + ', '.join(neg) + ') แปลว่าการ์ด EX ชุดเซ็ทที่เลือกว่าใส่อยู่ไม่ตรงกับในเกม '
                      'หรือมียา/บัฟค้างตอนอ่าน')

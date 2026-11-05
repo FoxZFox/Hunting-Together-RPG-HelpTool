@@ -889,9 +889,12 @@ class Game:
         it moves sideways now and then. Opens with C; the menu is the last try.
         """
         for attempt in range(3):
-            if not self.to_hud():
+            img = self.shot()
+            if seen(img, 'stats_str') or self.status_tab('Stats', img):
+                pass                            # already open: its X can be under the mouse pointer
+            elif not self.to_hud():
                 continue
-            if attempt < 2:
+            elif attempt < 2:
                 self.key(KEY_C)
                 time.sleep(1.0)
             else:
@@ -910,11 +913,22 @@ class Game:
                         continue
                     self.stats_dx = xy[0] - STATS_STR_X
                     return True
-                if skills_tab(img):
+                if skills_tab(img) or self.status_tab('Stats', img):
                     step('เปิดหน้า Stats', 'หน้าต่างเปิดค้างที่ Skills กดแท็บ Stats')
-                    self.tap(STATUS_TAB_STATS_WIDE, 1.2)
+                    self.tap(self.status_tab('Stats', img) or STATUS_TAB_STATS_WIDE, 1.2)
                 time.sleep(0.4)
         return False
+
+    def status_tab(self, name, img=None):
+        """Where the 'Stats' or 'Skills' tab button is, found by its label: on the Skills tab the window
+        is wider and has sat both at x 670 (2026-11-04) and x 436 (2026-11-06). None when the tab bar
+        does not show both labels (not Status & Skills)."""
+        img = self.shot() if img is None else img
+        lines = {l.text.strip().lower(): l for l in self.ocr.read(img, (250, 5, 750, 65), 2, 'white')}
+        if 'stats' not in lines or 'skills' not in lines:
+            return None
+        l = lines[name.lower()]
+        return l.x + l.w // 2, l.y + l.h // 2
 
     def sx(self, xy):
         """A Stats tab position moved to where the window is now (see STATS_STR_X)."""
@@ -956,10 +970,14 @@ class Game:
                    'time': time.strftime('%Y-%m-%d %H:%M')}
             if preview and values and points:
                 self._preview_stats(reader, out, values, points)
-            # the Extra passives in their slots (Skills tab), so they are not taken for gear
-            self.tap(self.sx(STATUS_TAB_SKILLS), 1.5)
+            # the Extra passives in their slots (Skills tab), so they are not taken for gear; then back to
+            # Stats, so the window opens there next time
+            self.tap(self.status_tab('Skills') or self.sx(STATUS_TAB_SKILLS), 1.5)
             skills = self.shot()
-            out['extras'] = stats_panel.extras_slotted(skills) if skills_tab(skills) else None
+            out['extras'] = stats_panel.extras_slotted(skills)          # empty slots read as None anyway
+            back = self.status_tab('Stats', skills)
+            if back:
+                self.tap(back, 1.0)
             return out
         finally:
             self.to_hud()
