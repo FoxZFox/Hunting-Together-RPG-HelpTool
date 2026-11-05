@@ -284,6 +284,63 @@
     "type": "passive",
     "effect": "STR +10, ATK +20%, Bag slots +20"
    }
+  ],
+  "Swordsman": [
+   {
+    "name": "Crushing Blow",
+    "type": "attack",
+    "tags": [
+     "Single Target",
+     "Melee"
+    ],
+    "sp": 8,
+    "follows_aspd": true,
+    "effect": "slash one target for 270% ATK"
+   },
+   {
+    "name": "Blazing Ring",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Melee"
+    ],
+    "sp": 20,
+    "cooldown": 3,
+    "effect": "plunge the sword into the ground: a fire ring around you for 250% ATK"
+   },
+   {
+    "name": "War Cry",
+    "type": "attack",
+    "tags": [
+     "AoE",
+     "Melee"
+    ],
+    "sp": 10,
+    "cooldown": 8,
+    "effect": "taunt nearby enemies (Leaders too) to attack you for 8 s; enemies -10% ATK and +10% damage taken; you take 20% less damage meanwhile"
+   },
+   {
+    "name": "Stone Stance",
+    "type": "buff",
+    "sp": 10,
+    "cooldown": 30,
+    "effect": "take 20% less damage and regen 2% HP per second for 30 s"
+   },
+   {
+    "name": "Blade Training",
+    "type": "passive",
+    "effect": "melee weapon: ATK +20%, attack speed +10%, +10% damage to stunned/burning enemies"
+   },
+   {
+    "name": "Second Wind",
+    "type": "passive",
+    "effect": "HP regen +100%, HP potions +50% stronger, SP regen +5"
+   },
+   {
+    "name": "Steel Skin",
+    "type": "passive",
+    "effect": "VIT +10 and max HP +10%"
+   }
   ]
  }
 }
