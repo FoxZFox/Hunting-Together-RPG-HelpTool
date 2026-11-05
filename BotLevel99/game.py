@@ -59,6 +59,8 @@ LEVEL_RECT = (0, 688, 130, 20)
 AREA_LIST_RECT = (30, 95, 215, 600)
 AREA_LIST_SCROLL = ((135, 600), (135, 260))
 AREA_ROW_STEP = 73                        # px between rows of the Card Book area list
+AREA_LIST_FLICK = ((135, 650), (135, 150))   # a 150 ms swipe: runs the list to its end (or top, reversed)
+LIST_ROWS = 8                             # area rows the list shows at once
 CARD_DROPS_RECT = (1020, 444, 230, 28)
 MONSTER_AREA_RECT = (60, 140, 380, 60)
 MONSTER_NAME_RECT = (636, 144, 600, 42)
@@ -523,7 +525,18 @@ class Game:
             s = self.state()
             if s in want or time.time() > end:
                 return s in want
-            time.sleep(0.4)
+            time.sleep(0.05)                # a screenshot already takes ~0.4 s
+
+    def wait_for(self, test, timeout=3.0, first=0.15):
+        """Screenshots until test(img) holds: that screenshot, or None after `timeout` s."""
+        time.sleep(first)
+        end = time.time() + timeout
+        while True:
+            img = self.shot()
+            if test(img):
+                return img
+            if time.time() > end:
+                return None
 
     def level(self, last=None, img=None):
         """(level or None, exp fraction) from a screenshot of the plain HUD (default: the last one)."""
@@ -552,7 +565,7 @@ class Game:
             if s == 'hud':
                 return True
             if s == 'book':
-                self.tap(BOOK_CLOSE)
+                self.tap(BOOK_CLOSE, 0.3)
             elif s == 'bag':
                 self.tap(BAG_CLOSE)
             elif s == 'menu':
@@ -583,7 +596,8 @@ class Game:
             self.key(key)
             if self.wait_state(want, 3):
                 return True
-        self.log(f'กดปุ่ม {"B" if key == KEY_B else "N"} แล้วหน้าต่างไม่ขึ้น เปิดผ่านเมนูแทน')
+        self.log(f'กดปุ่ม {"B" if key == KEY_B else "N"} แล้วหน้าต่างไม่ขึ้น เปิดผ่านเมนูแทน '
+                 f'(จอตอนนั้นเป็น {screen_state(self.img)}: {self._save("open-window")})')
         return self.open_menu_item(menu_item, want)
 
     # ---- Adventure Book -> Card Book -> Hunt this monster ----------------
@@ -598,14 +612,17 @@ class Game:
         previous = None
         direction = 1
         top, bottom = AREA_LIST_RECT[1] + 10, AREA_LIST_RECT[1] + AREA_LIST_RECT[3] - 15
-        for _ in range(30):
+        for attempt in range(30):
             lines = self.ocr.read(self.shot(), AREA_LIST_RECT, scale=2.5)
+            if attempt == 0 and len(lines) < 3:        # the Cards tab is still drawing its list
+                time.sleep(0.3)
+                lines = self.ocr.read(self.shot(), AREA_LIST_RECT, scale=2.5)
             if target is not None:
                 hits = [l for l in lines if best_match(l.text, known, 0.8, 0.05) == target]
             else:
                 hits = [l for l in lines if similar(l.text, area) >= 0.8]
             if hits:
-                self.tap(max(hits, key=lambda l: similar(l.text, area)).center, 1.0)
+                self.tap(max(hits, key=lambda l: similar(l.text, area)).center, 0.2)
                 return True
             if target is not None:
                 anchors = [(i, l) for l in lines if (i := best_match(l.text, known, 0.85, 0.05)) is not None]
@@ -614,9 +631,22 @@ class Game:
                     x, y = line.center
                     y += (target - i) * AREA_ROW_STEP
                     if top < y < bottom:
-                        self.tap((x, y), 1.0)
+                        self.tap((x, y), 0.2)
                         return True
                     direction = 1 if target > i else -1
+                # a quick flick runs the list all the way to its end or its top (2026-11-06: one 150 ms
+                # flick showed rows 12-19 of 20, one back rows 0-7): one flick instead of two drags of
+                # ~2 s each when the target sits within LIST_ROWS of either end
+                if attempt == 0 and len(known) > LIST_ROWS:
+                    (x1, y1), (x2, y2) = AREA_LIST_FLICK
+                    if target >= len(known) - LIST_ROWS and direction == 1:
+                        self.swipe((x1, y1), (x2, y2), 150)
+                        time.sleep(1.0)
+                        continue
+                    if target < LIST_ROWS and direction == -1:
+                        self.swipe((x2, y2), (x1, y1), 150)
+                        time.sleep(1.0)
+                        continue
             page = tuple(norm(l.text) for l in lines)
             if page == previous:            # the list did not move: hit an end
                 if direction == -1:
@@ -628,7 +658,7 @@ class Game:
                 self.swipe((x1, y1), (x2, y2))
             else:
                 self.swipe((x2, y2), (x1, y1))
-            time.sleep(0.8)
+            time.sleep(0.5)
         return False
 
     def scan_card_owned(self, card_areas, known):
@@ -668,9 +698,11 @@ class Game:
         """Tap the card whose "Drops from" names `monster` best ("Saber Tiger" must not
         settle for "Leader Saber Tiger"). When no card's line can be read, `order` (the area's
         monsters in data/monsters.json order, which is the cards' order) picks it instead."""
+        if self.wait_for(lambda im: self._card_is(im, monster), 1.2, 0.0) is not None:
+            return True                         # the area opened on it (a boss room's only card)
         best = (0.0, None)
         for xy in CARD_SLOTS:
-            self.tap(xy, 0.7)
+            self.tap(xy, 0.45)
             img = self.shot()
             score = 0.0
             for scale, mode in ((2.5, 'dark'), (3, 'gray')):
@@ -692,6 +724,14 @@ class Game:
         self.tap(best[1], 0.7)
         return True
 
+    def _card_is(self, img, monster):
+        """Card Details shows `monster`'s card ("Drops from" names it)."""
+        for scale, mode in ((2.5, 'dark'), (3, 'gray')):
+            drops = self.ocr.text(img, CARD_DROPS_RECT, scale, mode)
+            if similar(re.sub(r'(?i)^.*from', '', drops), monster) >= 0.95:
+                return True
+        return False
+
     def hunt(self, area, monster, known_areas=(), order=()):
         """Open the Card Book on `monster`'s card and press Hunt this monster.
 
@@ -711,7 +751,8 @@ class Game:
             self.to_hud()
             return False
         step('กด Hunt', monster)
-        self.tap(HUNT_BTN, 1.5)
+        self.tap(HUNT_BTN, 0.1)
+        self.wait_for(lambda im: screen_state(im) != 'book' or seen(im, 'stop_btn'), 2.0, 0.0)
         return self.to_hud()
 
     def stop_hunt(self, area, monster, known_areas=()):
@@ -755,7 +796,10 @@ class Game:
         if not self.open_window(KEY_N, 'book', MENU_BOOK):
             self.log('เปิด Adventure Book ไม่ได้')
             return None
-        self.tap(BOOK_TAB_CARDS, 1.2)
+        img = self.img
+        if (seen(img, 'hunt_btn', 0.7) or seen(img, 'stop_btn')) and self._card_is(img, monster):
+            return img                          # it reopened on this card (same server, e.g. after a death)
+        self.tap(BOOK_TAB_CARDS, 0.3)
         step('เลือกแมพ', area)
         if not self._select_area(area, known_areas):
             self.log(f'หาแมพ "{area}" ในหน้า Card Book ไม่เจอ')

@@ -195,18 +195,23 @@ class Bot:
         return self._join(self.cfg['bot']['join_url'])
 
     def hop(self, why, boss=None):
-        """Move to another server: leave through the Roblox menu (so the game saves), then join
-        a server whose `boss` respawns about when we get there, or else one picked by the panel's
-        rule (fewest players, random...) that we have not been to lately."""
+        """Move to another server: one whose `boss` respawns about when we get there, or else one
+        picked by the panel's rule (fewest players, random...) that we have not been to lately.
+
+        [boss] direct_join (default on): open the new server's link from inside the game. Roblox
+        then leaves the old server by itself, as a teleport does (the game saves on leaving either
+        way), which skips the Leave menu and the app's home page. When the link does nothing the
+        bot leaves through the Roblox menu and joins as before."""
         log(f'{why} → ย้ายห้อง')
         st = self.status
         st['hops'] += 1
         self.hop_started = time.time()
         self.timed = None
         self.deaths_here = 0
-        if not self.game.leave():
-            self.dev.stop_roblox()
-            self.wait(3)
+        direct = self.cfg.get('boss', {}).get('direct_join', True) and self.dev.roblox_in_front() \
+            and not app_page(self.game.shot())
+        if not direct:
+            self._leave()
         server = None
         step('ดึงรายชื่อห้อง')
         try:
@@ -231,13 +236,30 @@ class Bot:
         if server:
             log(f'เข้าห้องที่มีคน {server["playing"]}/{server["maxPlayers"]} คน')
             step('เข้าห้องใหม่', f'{server["playing"]}/{server["maxPlayers"]} คน' + (' (ตามเวลา)' if self.timed else ''))
-            return self._join(self.servers.join_url(server))
-        if self.servers:
-            self.servers.current = None         # a random server: its id is unknown
-        return self._join(self.cfg['bot']['join_url'])
+            url = self.servers.join_url(server)
+        else:
+            if self.servers:
+                self.servers.current = None     # a random server: its id is unknown
+            url = self.cfg['bot']['join_url']
+        if direct:
+            ok = self._join(url, from_game=True)
+            if ok is not None:
+                return ok
+            log('เปิดลิงก์ห้องใหม่จากในเกมแล้วไม่ย้ายห้อง → ออกผ่านเมนูแล้วเข้าใหม่')
+            self._leave()
+        return self._join(url)
 
-    def _join(self, url):
+    def _leave(self):
+        """Leave through the Roblox menu (the game saves); force-stop Roblox when that fails."""
+        if not self.game.leave():
+            self.dev.stop_roblox()
+            self.wait(3)
+
+    def _join(self, url, from_game=False):
         """Open a roblox:// link and wait (up to 3 minutes) until the game is playable.
+        from_game: the link is opened while still in a server. Until something other than that
+        game's HUD shows, its HUD is not taken for the new server; None when nothing changes within
+        12 s (Roblox did not act on the link).
 
         As soon as a join has loaded the game shows a Skip button over its intro camera:
         pressing it is the earliest sign we are in, and skips the camera swing too. When boss
@@ -248,13 +270,31 @@ class Bot:
         sent = fixed = time.time()
         end = time.time() + 180
         img = hud_since = None
+        gone = not from_game                    # has the old server's screen gone yet?
+        other_since = None                      # from_game: since when no HUD has shown
         while time.time() < end:
-            if self.wait(1):
+            if self.wait(0.5 if not gone else 1):
                 return False
             try:
                 if not self.dev.roblox_in_front():
+                    gone = True
                     continue
                 img = g.shot()
+                if not gone:
+                    # gone for sure: Roblox's own page, or the new server's Skip button; a card popup
+                    # or a window of the old game also hides its HUD, but not for 6 s on end
+                    if app_page(img) or find(img, 'skip_btn')[1]:
+                        gone = True
+                    elif screen_state(img) == 'hud':
+                        other_since = None
+                    else:
+                        other_since = other_since or time.time()
+                        gone = time.time() - other_since >= 6
+                    if not gone:
+                        if other_since is None and time.time() - sent > 15:
+                            return None             # still on the old server's HUD
+                        continue
+                    log(f'ออกจากห้องเดิมแล้ว ({time.time() - sent:.1f} วิหลังเปิดลิงก์)')
                 if app_page(img):
                     if time.time() - sent > 20:
                         # a cold start can drop the link and leave Roblox on its own home page
