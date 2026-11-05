@@ -200,6 +200,12 @@ def statusbar_shown(img):
     return xy is not None and xy[1] > 70         # the bar too, but no logo: nothing to fix there)
 
 
+def blank_white(img):
+    """The whole screen is plain white: a join that hung (the user, 2026-11-06)."""
+    g = cv2.cvtColor(img[::8, ::8], cv2.COLOR_BGR2GRAY)
+    return g.mean() > 235 and g.std() < 10
+
+
 def auto_battle(img):
     """True / False when the Auto battle sword is green (on) / white (off), None when it cannot
     be seen. On 2026-11-04: on = ~1,670 green px and ~90 white, off = 0 green and ~1,500 white."""
@@ -503,6 +509,8 @@ class Game:
         self.img_at = 0.0                   # when self.img was taken (the panel reuses it as its preview)
 
     # ---- basics ---------------------------------------------------------
+    restart_wanted = None                       # why LDPlayer should be restarted, or None
+
     def shot(self):
         self.img = self.dev.screenshot()
         self.img_at = time.time()
@@ -515,14 +523,16 @@ class Game:
 
     def fix_statusbar(self):
         """Pull Android's notification shade down and back up: the window goes back to Roblox, which
-        hides the system bars again (it had them shown after some joins, 2026-11-06)."""
+        hides the system bars again (it had them shown after some joins, 2026-11-06). When the bar is
+        still there, ask the bot to restart LDPlayer (restart_wanted), as the user said to."""
         self.log('แถบสถานะของ Android โผล่ทับเกม (ปุ่มในเกมเลื่อนลง) → ดึงแถบแจ้งเตือนลงแล้วเก็บ ให้เกมกลับมาเต็มจอ')
         self.dev.shell('cmd statusbar expand-notifications')
         time.sleep(0.8)
         self.dev.shell('cmd statusbar collapse')
         time.sleep(1.0)
         if statusbar_shown(self.dev.screenshot()):
-            self.log(f'แถบสถานะยังไม่หาย ({self._save("statusbar")})')
+            self.log(f'แถบสถานะยังไม่หาย ({self._save("statusbar")}) → จะปิดแล้วเปิด LDPlayer ใหม่')
+            self.restart_wanted = 'แถบสถานะ Android โผล่ทับเกมแล้วไม่หาย'
 
     def state(self):
         return screen_state(self.shot())
@@ -621,6 +631,8 @@ class Game:
     def open_window(self, key, want, menu_item):
         """Open the Bag (B) or Adventure Book (N) with its hotkey; fall back to the menu."""
         for _ in range(2):
+            if self.restart_wanted:
+                return False                    # the layout is off: the bot restarts LDPlayer first
             if not self.to_hud():
                 continue
             self.key(key)

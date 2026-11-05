@@ -25,7 +25,7 @@ import winsound
 import cv2
 
 from device import Device, DeviceError
-from game import KEYS, Game, app_page, find, note, screen_state, seen, similar, step, target_hp, target_kind
+from game import KEYS, Game, app_page, blank_white, find, note, screen_state, seen, similar, step, target_hp, target_kind
 from ocr import Ocr
 from servers import Servers
 
@@ -218,6 +218,8 @@ class Bot:
             url = self._pick_url(boss)
             if direct:
                 ok = self._join(url, from_game=True)
+                if self.game.restart_wanted:
+                    return False
                 if ok is None:                  # still on the old server: this one is full or gone
                     ignored += 1
                     if ignored >= 2:
@@ -229,7 +231,7 @@ class Bot:
                     continue
             else:
                 ok = self._join(url, give_up_s=45)
-            if ok or self.stop_event.is_set():
+            if ok or self.stop_event.is_set() or self.game.restart_wanted:
                 return ok
             log('เข้าห้องนี้ไม่ได้ (Roblox เด้งกลับหน้าแอป) → ลองห้องอื่น')
             direct = False                      # from Roblox's own page now
@@ -291,7 +293,7 @@ class Bot:
         end = time.time() + 180
         img = hud_since = None
         gone = not from_game                    # has the old server's screen gone yet?
-        on_app_since = None
+        on_app_since = white_since = None
         other_since = None                      # from_game: since when no HUD has shown
         while time.time() < end:
             if self.wait(0.5 if not gone else 1):
@@ -301,6 +303,16 @@ class Bot:
                     gone = True
                     continue
                 img = g.shot()
+                if g.restart_wanted:
+                    return False
+                if blank_white(img):
+                    white_since = white_since or time.time()
+                    if time.time() - white_since > 15:
+                        save_screen(img, 'join-white')
+                        g.restart_wanted = 'เข้าห้องแล้วจอขาวค้าง 15 วิ'
+                        return False
+                    continue
+                white_since = None
                 if not gone:
                     # gone for sure: Roblox's own page, or the new server's Skip button; a card popup
                     # or a window of the old game also hides its HUD, but not for 6 s on end
@@ -354,8 +366,8 @@ class Bot:
         log('เข้าเกมใหม่ไม่สำเร็จภายใน 3 นาที จะลองอีกรอบ')
         return False
 
-    def restart_ldplayer(self):
-        """Close and reopen LDPlayer after it stopped answering, then get back into the game."""
+    def restart_ldplayer(self, why=None):
+        """Close and reopen LDPlayer after it stopped answering (or `why`), then get back into the game."""
         if self.restart_streak >= 3:
             log('เปิด LDPlayer ใหม่ 3 รอบแล้วยังเข้าเกมไม่ได้ จะรอ 10 นาทีแล้วลองอีกครั้ง')
             if self.wait(600):
@@ -363,7 +375,7 @@ class Bot:
             self.restart_streak = 0
         self.restart_streak += 1
         self.status['restarts'] += 1
-        log(f'LDPlayer ไม่ตอบ {self.failures} รอบติดกัน → ปิดแล้วเปิด LDPlayer ใหม่')
+        log(f'{why or f"LDPlayer ไม่ตอบ {self.failures} รอบติดกัน"} → ปิดแล้วเปิด LDPlayer ใหม่')
         step('ปิดแล้วเปิด LDPlayer ใหม่')
         self.failures = 0
         if not self.dev.restart_emulator():
@@ -378,6 +390,10 @@ class Bot:
         """LDPlayer up, Roblox in front and inside the game. Returns a fresh screenshot, or None
         when something had to be fixed first (the caller forgets what it was doing and goes again)."""
         st = self.status
+        if self.game.restart_wanted:            # the status bar will not go, a join hung on white
+            why, self.game.restart_wanted = self.game.restart_wanted, None
+            self.restart_ldplayer(why)
+            return None
         if self.failures >= self.cfg['bot'].get('restart_after_failures', 3):
             self.restart_ldplayer()
             return None
