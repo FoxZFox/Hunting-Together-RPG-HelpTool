@@ -544,7 +544,7 @@ def gear_from_reading(job, rd, equipped=None):
         p_spd = 1 - agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
     else:
         notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
-    if pan.get('ASPD'):
+    if pan.get('ASPD') and pan['ASPD'] < 190:          # at the cap the flat part cannot be told either
         expect = 200 - m.W * (1 - p_spd) * (1 - t['AGI'] / 250 - t['DEX'] / 1000)
         gear['aspd'] = round(pan['ASPD'] - expect - eq.get('aspd', 0), 1)
     gear['aspd_pct'] = round(100 * (p_spd - m.c['aspd_pct'] - eq.get('aspd_pct', 0)), 1)
