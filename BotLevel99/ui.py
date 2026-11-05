@@ -175,7 +175,8 @@ class Panel:
 
     def _read_idle(self, img):
         view = {'screen': screen_state(img), 'at': time.time()}
-        if view['screen'] == 'hud' and time.time() - self.idle_view.get('level_at', 0) > 4:
+        # level_at is None until the HUD has been seen once (the panel can start on a window)
+        if view['screen'] == 'hud' and time.time() - (self.idle_view.get('level_at') or 0) > 4:
             level, exp = self.bot.game.level(self.idle_view.get('level'), img)
             view.update(level=level, exp=exp, level_at=time.time())
         else:

@@ -972,7 +972,11 @@ class Game:
                     delta = reader.panel(shot, dx)
                     out['previews'][stat] = {'add': add, **{k: d for k, (_, d) in delta.items() if d}}
                 self.tap(self.sx(STATS_CLEAR), 1.0)
-                _, back = self.read_stats(self.shot())
+                for _ in range(3):              # the points box now and then reads as nothing for a frame
+                    _, back = self.read_stats(self.shot())
+                    if back is not None:
+                        break
+                    time.sleep(0.5)
                 if back != points:
                     self.log(f'กด Clear แล้วแต้มไม่กลับมาครบ ({back} จาก {points}) หยุดลองกด +')
                     break
