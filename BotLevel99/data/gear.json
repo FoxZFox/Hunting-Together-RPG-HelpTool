@@ -1,0 +1,39 @@
+{
+ "read": "2026-11-05, the user's screenshots of a weapon's option lists, with their notes on tiers",
+ "notes": [
+  "a weapon rolls 1 Special and 3 Random stats; a Tier VI weapon rolls 4 Random",
+  "Random stats never repeat on one item",
+  "only_vi = only Tier VI rolls it: below VI there is no Random ATK, MATK, Melee DMG, Ranged DMG, Drop Rate or EXP, and no Special Cast Speed, Crit DMG, Single Skill DMG or AoE Skill DMG",
+  "ranges as the game lists them (Crit Rate is shown without %); not yet known whether they change with tier or +upgrade"
+ ],
+ "slots": {
+  "Weapon": {
+   "special_count": 1,
+   "random_count": {"I-V": 3, "VI": 4},
+   "special": [
+    {"stat": "Crit Rate", "min": 7, "max": 14},
+    {"stat": "ATK % + MATK %", "min": 5, "max": 10, "unit": "%"},
+    {"stat": "DEF Pen", "min": 24, "max": 42, "unit": "%"},
+    {"stat": "MDEF Pen", "min": 24, "max": 42, "unit": "%"},
+    {"stat": "Cast Speed", "min": 8, "max": 14, "unit": "%", "only_vi": true},
+    {"stat": "Crit DMG", "min": 10, "max": 20, "unit": "%", "only_vi": true},
+    {"stat": "Single Skill DMG", "min": 5, "max": 8, "unit": "%", "only_vi": true},
+    {"stat": "AoE Skill DMG", "min": 8, "max": 12, "unit": "%", "only_vi": true}
+   ],
+   "random": [
+    {"stat": "STR", "min": 5, "max": 10},
+    {"stat": "AGI", "min": 5, "max": 10},
+    {"stat": "INT", "min": 5, "max": 10},
+    {"stat": "DEX", "min": 5, "max": 10},
+    {"stat": "LUK", "min": 5, "max": 10},
+    {"stat": "SP", "min": 50, "max": 100},
+    {"stat": "ATK", "min": 20, "max": 30, "only_vi": true},
+    {"stat": "MATK", "min": 30, "max": 45, "only_vi": true},
+    {"stat": "Melee DMG", "min": 3, "max": 5, "unit": "%", "only_vi": true},
+    {"stat": "Ranged DMG", "min": 3, "max": 5, "unit": "%", "only_vi": true},
+    {"stat": "Drop Rate", "min": 3, "max": 5, "unit": "%", "only_vi": true},
+    {"stat": "EXP", "min": 3, "max": 5, "unit": "%", "only_vi": true}
+   ]
+  }
+ }
+}
