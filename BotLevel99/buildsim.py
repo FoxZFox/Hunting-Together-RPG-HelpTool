@@ -440,6 +440,8 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     e = combine(base, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
     stats, left = best_stats(model, e, points, aspd_min, crit_min, farm)
     pn = model.panel(stats, e)
+    e_screen = combine(gear, pot, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
+    ps = model.panel(stats, e_screen)
     notes = []
     # each set with the rest kept and the stats chosen again for it
     ranking = []
@@ -476,6 +478,7 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
         'hits_per_s': round(50 / (200 - pn['ASPD']), 2),
         'dps': round(model.dps(stats, e, farm)),
         'potion': potion if pot else NO_POTION,
+        'panel_screen': {k: ps[k] for k in ('ATK', 'ASPD', 'Crit Rate', 'Crit DMG')},
         'set_ranking': ranking, 'luk_compare': luk,
     }
 
@@ -499,7 +502,9 @@ def gear_from_reading(job, rd, equipped=None):
     'extras': [...]}). ATK% and attack speed % come from the +10 previews; without them (no free points)
     the gear is taken to add none. Returns (gear for best_build, notes)."""
     m = Model(job)
-    equipped = equipped or {}
+    equipped = dict(equipped or {})
+    if not equipped.get('extras') and rd.get('extras'):
+        equipped['extras'] = [x for x in rd['extras'] if x]       # what the Skills tab showed slotted
     cards = {c[0]: c[2] for c in all_cards(job)}
     extras = {x['name']: parse_effect(x['effect']) for x in _data('extras.json')['extras']}
     sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
@@ -549,6 +554,15 @@ def gear_from_reading(job, rd, equipped=None):
         gear['crit_dmg'] = round(sp['Crit DMG'] - m.crit_dmg0 - eq.get('crit_dmg', 0))
     if sp.get('DEF Pen') is not None:
         gear['def_pen'] = round(sp['DEF Pen'] - 100 * eq.get('def_pen', 0))
+    if equipped.get('extras'):
+        notes.append(f"หัก EX ที่ใส่อยู่ออกแล้ว: {', '.join(equipped['extras'])}")
+    # gear cannot give these (data/gear.json): what shows is cards or Extras not taken out
+    if gear.get('aspd_pct', 0) > 1.5:
+        notes.append(f"ชุดให้ Attack Speed % ไม่ได้ (แหวนให้ ASPD เป็นตัวเลขเท่านั้น) ที่เห็น +{gear['aspd_pct']}% "
+                     'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
+    if gear.get('atk_pct', 0) > 12:
+        notes.append(f"ชุดให้ ATK% ได้ราว 10% เท่านั้น (Special ของอาวุธ) ที่เห็น +{gear['atk_pct']}% "
+                     'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
     neg = [k for k in ('atk', 'atk_pct', 'aspd_pct', 'crit', 'crit_dmg') if gear.get(k, 0) < -2]
     if neg:
         notes.append('ค่าติดลบ (' + ', '.join(neg) + ') แปลว่าการ์ด EX ชุดเซ็ทที่เลือกว่าใส่อยู่ไม่ตรงกับในเกม '

@@ -964,6 +964,8 @@ function abResult(d, r) {
     el('div', { class: 'ab-panel' }, ...nums.map(([k, v]) => el('span', { class: 'stat-chip' }, el('b', { text: k }), String(v)))),
     ...(r.notes || []).map((t) => el('p', { class: 'form-msg', 'data-tone': 'bad', text: t })),
     el('p', { class: 'field-help', text: `Cast Speed +${p['Cast Speed']}% · ยา: ${r.potion}` }),
+    r.panel_screen && (r.panel_screen.ASPD !== p.ASPD || r.panel_screen['Crit Rate'] !== p['Crit Rate'])
+      && el('p', { class: 'field-help', text: `หน้า Stats ตอนไม่ได้ตี (บัฟของอาชีพยังไม่ติด): ASPD ${r.panel_screen.ASPD} · Crit ${r.panel_screen['Crit Rate']}% · ATK ${r.panel_screen.ATK} ส่วนตัวเลขด้านบนคือตอนตีที่บัฟติด` }),
     slotList('ชุดเซ็ท', [setItem]),
     slotList('ชุดเซ็ทเรียงจากดีสุด (ไม่มีตัวบน ใส่ตัวถัดไป)', (r.set_ranking || []).map((s) =>
       el('li', { class: 'slot' }, el('span', { class: 'slot-name', text: s.name }),
@@ -997,6 +999,10 @@ async function abGearFromReading() {
   const res = await api('/api/autobuild/gear', { job: buildData().job, equipped: abEquipped() }).catch(() => null);
   if (!res?.ok) return setMsg('#ab-read-msg', res?.error || 'คิดค่าชุดไม่สำเร็จ', 'bad');
   if (res.job && res.job !== buildData().job) await saveBuild({ class: res.job });   // show the class that was read
+  const slotted = res.reading.extras || [];
+  if (slotted.some(Boolean) && !abEquipped().extras.length) {        // fill the EX picks from the Skills tab
+    document.querySelectorAll('#ab-equipped [data-eq="extras"]').forEach((s, i) => { s.value = slotted[i] || ''; });
+  }
   for (const [k, v] of Object.entries(res.gear)) {
     const input = document.querySelector(`#ab-gear [data-gear="${k}"]`);
     if (input) input.value = v;

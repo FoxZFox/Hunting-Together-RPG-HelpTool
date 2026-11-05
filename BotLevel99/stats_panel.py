@@ -217,3 +217,34 @@ def buffs(img, templates=None):
     if pots and pots[-1][0] >= 0.85:
         found.append(pots[-1][1])
     return found
+
+
+# ---- the Extra slots on the Skills tab -----------------------------------------------------------
+EXTRA_DIR = os.path.join(HERE, 'templates', 'extras')
+EXTRA_SLOTS = ((1077, 300), (1185, 300), (1077, 408), (1185, 408), (1077, 515), (1185, 515))
+EXTRA_NAMES = {"Hunters Focus": "Hunter's Focus"}       # file names leave the apostrophe out
+
+
+def extras_slotted(img):
+    """The Extra passive in each of the 6 slots (Skills tab open), None for an empty or unknown slot.
+    Icons cut from each class's own passive cards: a slotted one scores 0.89-0.98 and the next best name
+    0.5 or less, an empty slot 0.36 or less (2026-11-06). No icons yet for the Mage's and Alchemist's."""
+    tpl = {}
+    if os.path.isdir(EXTRA_DIR):
+        for f in sorted(os.listdir(EXTRA_DIR)):
+            if f.endswith('.png'):
+                name = f[:-4].replace('_', ' ')
+                tpl[EXTRA_NAMES.get(name, name)] = cv2.imread(os.path.join(EXTRA_DIR, f))
+    out = []
+    for x, y in EXTRA_SLOTS:
+        roi = img[y - 50:y + 50, x - 50:x + 50]
+        best = (0.0, None)
+        for name, t0 in tpl.items():
+            for s in np.arange(1.0, 1.45, 0.05):
+                t = cv2.resize(t0, None, fx=s, fy=s)
+                if t.shape[0] < roi.shape[0] and t.shape[1] < roi.shape[1]:
+                    v = cv2.minMaxLoc(cv2.matchTemplate(roi, t, cv2.TM_CCOEFF_NORMED))[1]
+                    if v > best[0]:
+                        best = (v, name)
+        out.append(best[1] if best[0] >= 0.75 else None)
+    return out

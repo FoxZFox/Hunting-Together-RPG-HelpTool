@@ -35,6 +35,7 @@ MONSTER_PREV = (61, 171)
 MONSTER_NEXT = (440, 171)
 MONSTER_THUMBS = [(85, 265), (192, 265), (298, 265), (405, 265)]
 MENU_STATUS = (677, 150)                  # menu: Status & Skills
+STATUS_TAB_SKILLS = (819, 33)              # Skills tab button on the Stats tab (moved by Game.sx)
 STATUS_TAB_STATS_WIDE = (703, 39)         # Stats tab when the window opened on Skills (it is wider there);
                                           # inside the button whether the window sits left or right (see below)
 # The Stats tab positions below were measured with its "STR" label centred at x=STATS_STR_X.
@@ -953,36 +954,44 @@ class Game:
                    'panel': {k: v for k, (v, _) in reader.panel(img, dx).items()},
                    'special': reader.special(img, dx), 'previews': {}, 'job': job, 'buffs': active,
                    'time': time.strftime('%Y-%m-%d %H:%M')}
-            if not (preview and values and points):
-                return out
-            for stat in ('STR', 'DEX', 'AGI'):
-                cur = values[stat]
-                add = next((n for n in (30, 20, 10) if cur + n <= 99
-                            and sum(stat_cost(v) for v in range(cur, cur + n)) <= points), 0)
-                if not add:
-                    continue
-                cost = sum(stat_cost(v) for v in range(cur, cur + add))
-                y = STAT_ROW_Y[STAT_NAMES.index(stat)]
-                for _ in range(add // 10):
-                    self.tap(self.sx((STAT_PLUS10_X, y)), 0.4)
-                time.sleep(0.6)
-                shot = self.shot()
-                _, left = self.read_stats(shot)
-                if left == points - cost:
-                    delta = reader.panel(shot, dx)
-                    out['previews'][stat] = {'add': add, **{k: d for k, (_, d) in delta.items() if d}}
-                self.tap(self.sx(STATS_CLEAR), 1.0)
-                for _ in range(3):              # the points box now and then reads as nothing for a frame
-                    _, back = self.read_stats(self.shot())
-                    if back is not None:
-                        break
-                    time.sleep(0.5)
-                if back != points:
-                    self.log(f'กด Clear แล้วแต้มไม่กลับมาครบ ({back} จาก {points}) หยุดลองกด +')
-                    break
+            if preview and values and points:
+                self._preview_stats(reader, out, values, points)
+            # the Extra passives in their slots (Skills tab), so they are not taken for gear
+            self.tap(self.sx(STATUS_TAB_SKILLS), 1.5)
+            skills = self.shot()
+            out['extras'] = stats_panel.extras_slotted(skills) if skills_tab(skills) else None
             return out
         finally:
             self.to_hud()
+
+    def _preview_stats(self, reader, out, values, points):
+        """Stats tab open: +10..+30 on STR, DEX and AGI, read the green deltas, Clear after each."""
+        dx = self.stats_dx
+        for stat in ('STR', 'DEX', 'AGI'):
+            cur = values[stat]
+            add = next((n for n in (30, 20, 10) if cur + n <= 99
+                        and sum(stat_cost(v) for v in range(cur, cur + n)) <= points), 0)
+            if not add:
+                continue
+            cost = sum(stat_cost(v) for v in range(cur, cur + add))
+            y = STAT_ROW_Y[STAT_NAMES.index(stat)]
+            for _ in range(add // 10):
+                self.tap(self.sx((STAT_PLUS10_X, y)), 0.4)
+            time.sleep(0.6)
+            shot = self.shot()
+            _, left = self.read_stats(shot)
+            if left == points - cost:
+                delta = reader.panel(shot, dx)
+                out['previews'][stat] = {'add': add, **{k: d for k, (_, d) in delta.items() if d}}
+            self.tap(self.sx(STATS_CLEAR), 1.0)
+            for _ in range(3):                  # the points box now and then reads as nothing for a frame
+                _, back = self.read_stats(self.shot())
+                if back is not None:
+                    break
+                time.sleep(0.5)
+            if back != points:
+                self.log(f'กด Clear แล้วแต้มไม่กลับมาครบ ({back} จาก {points}) หยุดลองกด +')
+                break
 
     def read_stats(self, img):
         """({stat: base value}, points left), with None for what could not be read."""
