@@ -100,7 +100,9 @@ TEMPLATE_REGIONS = {
     'hud_menu': (925, 20, 65, 65),        # 4-square menu icon on the HUD
     'hud_hp': (450, 620, 70, 50),         # "HP" on the HP bar
     'menu_quests': (550, 100, 72, 72),    # Quests icon = menu popup is open
-    'book_icon': (240, 0, 200, 80),       # Adventure Book window (an update moved it from x~366 to ~299)
+    # Adventure Book: the word "Titles" on its tab bar (a tab the bot never opens). Its old mark, the
+    # book icon, now sits under Roblox's own buttons; y stops at 75 so a status-bar-shifted book does not count
+    'book_tabs': (430, 0, 520, 75),
     'hunt_btn': (960, 620, 270, 70),      # Card Book: "Hunt this monster"
     'stop_btn': (960, 620, 270, 70),      # Card Book: "Stop" = this monster is already being hunted
     'bag_icon': (525, 75, 75, 75),        # Bag window (sometimes still a loading globe)
@@ -255,7 +257,9 @@ def screen_state(img):
     Each screen is recognised by more than one mark: LDPlayer draws the Windows
     mouse pointer into its screenshots, and it can sit on top of any one of them.
     """
-    if seen(img, 'book_icon') or seen(img, 'close_x', 0.85, BOOK_X_REGION):
+    # the X alone failed whenever the pointer LDPlayer draws sat on it, e.g. right after the bot
+    # closed the book with it (2026-11-06)
+    if seen(img, 'book_tabs') or seen(img, 'close_x', 0.85, BOOK_X_REGION):
         return 'book'
     # Bag: on 2026-11-04 its icon was still a loading globe while the pointer sat on its X
     if (seen(img, 'bag_icon') + seen(img, 'bag_title') + seen(img, 'auto_gear')
@@ -413,6 +417,37 @@ def parse_respawn(text):
     """'Respawns in 9:58' -> 598 seconds, or None. OCR often loses the start ("spawns ih 9:43")."""
     m = re.search(r'(?i)(?:awn|wns)\w*\s*\w{0,3}\s*(\d{1,2})\s*[:.;]\s*(\d\d)', text)
     return int(m.group(1)) * 60 + int(m.group(2)) if m else None
+
+
+AREA_NAME_TO_BOX = 14   # px from an area row's name line down to the middle of its box
+
+
+def picked_area(img, lines, known):
+    """Index in `known` of the Card Book area row drawn orange (the one picked); -1 when no
+    whole orange row shows, None when it shows but its place cannot be told. `lines` is the
+    OCR of AREA_LIST_RECT: the orange row's place is counted from the nearest row whose name
+    reads (white on orange may not)."""
+    x, y, w, h = AREA_LIST_RECT
+    hsv = cv2.cvtColor(img[y:y + h, x:x + w], cv2.COLOR_BGR2HSV)
+    orange = (hsv[..., 0] >= 8) & (hsv[..., 0] <= 25) & (hsv[..., 1] > 80) & (hsv[..., 2] > 200)
+    rows = np.flatnonzero(orange.mean(axis=1) > 0.4)
+    if not len(rows):
+        return -1
+    run = max(np.split(rows, np.flatnonzero(np.diff(rows) > 3) + 1), key=len)
+    if len(run) < 25:                       # a row's box is ~65 px high; less = cut off at an edge
+        return -1
+    middle = y + (run[0] + run[-1]) / 2
+    best = None
+    for line in lines:
+        i = best_match(line.text, known, 0.85, 0.05)
+        if i is None:
+            continue
+        off = (middle - line.center[1] - AREA_NAME_TO_BOX) / AREA_ROW_STEP
+        if abs(off - round(off)) > 0.3:      # a name line that sits between rows: not a row's name
+            continue
+        if best is None or abs(round(off)) < best[0]:
+            best = (abs(round(off)), i + round(off))
+    return best[1] if best and 0 <= best[1] < len(known) else None
 
 
 def parse_owned(text):
@@ -653,9 +688,12 @@ class Game:
         target = best_match(area, known, 0.9) if known else None
         previous = None
         direction = 1
+        moved = False                   # the list was dragged or a tap missed: let it come to rest first
+        misses = 0
         top, bottom = AREA_LIST_RECT[1] + 10, AREA_LIST_RECT[1] + AREA_LIST_RECT[3] - 15
         for attempt in range(30):
-            lines = self.ocr.read(self.shot(), AREA_LIST_RECT, scale=2.5)
+            lines = self.ocr.read(self._list_still() if moved else self.shot(), AREA_LIST_RECT, scale=2.5)
+            moved = False
             if attempt == 0 and len(lines) < 3:        # the Cards tab is still drawing its list
                 time.sleep(0.3)
                 lines = self.ocr.read(self.shot(), AREA_LIST_RECT, scale=2.5)
@@ -663,19 +701,33 @@ class Game:
                 hits = [l for l in lines if best_match(l.text, known, 0.8, 0.05) == target]
             else:
                 hits = [l for l in lines if similar(l.text, area) >= 0.8]
+            spot = None
             if hits:
-                self.tap(max(hits, key=lambda l: similar(l.text, area)).center, 0.2)
-                return True
-            if target is not None:
+                spot = max(hits, key=lambda l: similar(l.text, area)).center
+            elif target is not None:
                 anchors = [(i, l) for l in lines if (i := best_match(l.text, known, 0.85, 0.05)) is not None]
                 if anchors:
                     i, line = min(anchors, key=lambda a: abs(a[0] - target))
                     x, y = line.center
                     y += (target - i) * AREA_ROW_STEP
                     if top < y < bottom:
-                        self.tap((x, y), 0.2)
-                        return True
-                    direction = 1 if target > i else -1
+                        spot = (x, y)
+                    else:
+                        direction = 1 if target > i else -1
+            if spot:
+                self.tap(spot, 0.2)
+                # 2026-11-06: a tap on a list still gliding after a drag picked the row below
+                # (Polar Bear Plain for Obsidian Pharaoh) or nothing, so look at which row lit up
+                picked = self._picked(target, known)
+                if picked is None or picked is True:
+                    return True
+                misses += 1
+                if misses >= 3:
+                    # never an orange row at all: the game may draw it differently now, go on as before
+                    return picked == 'none'
+                moved = True
+                continue
+            if target is not None:
                 # a quick flick runs the list all the way to its end or its top (2026-11-06: one 150 ms
                 # flick showed rows 12-19 of 20, one back rows 0-7): one flick instead of two drags of
                 # ~2 s each when the target sits within LIST_ROWS of either end
@@ -700,7 +752,36 @@ class Game:
                 self.swipe((x1, y1), (x2, y2))
             else:
                 self.swipe((x2, y2), (x1, y1))
-            time.sleep(0.5)
+            time.sleep(0.3)
+            moved = True
+        return False
+
+    def _list_still(self):
+        """A screenshot of the Card Book once its area list has stopped moving (a drag leaves
+        it gliding for a moment): the list looks the same in two shots in a row."""
+        x, y, w, h = AREA_LIST_RECT
+        img = self.shot()
+        for _ in range(4):
+            last = img[y:y + h, x:x + w].copy()
+            img = self.shot()
+            if cv2.absdiff(img[y:y + h, x:x + w], last).mean() < 1.5:
+                break
+        return img
+
+    def _picked(self, target, known):
+        """After tapping a row of the area list: True when the orange (picked) row is the
+        `target`-th area, False when it is another one, 'none' when no row lit up (the tap
+        only stopped the list), None when that cannot be told."""
+        if target is None:
+            return None
+        img = self.shot()
+        got = picked_area(img, self.ocr.read(img, AREA_LIST_RECT, scale=2.5), known)
+        if got is None or got == target:
+            return None if got is None else True
+        if got == -1:
+            self.log(f'กดแมพ {known[target]} แล้วไม่มีแถวไหนถูกเลือก (รายชื่อยังเลื่อนอยู่) กดใหม่')
+            return 'none'
+        self.log(f'กดแมพพลาดไปโดน {known[got]} (จะเอา {known[target]}) กดใหม่')
         return False
 
     def scan_card_owned(self, card_areas, known):
@@ -743,6 +824,7 @@ class Game:
         if self.wait_for(lambda im: self._card_is(im, monster), 1.2, 0.0) is not None:
             return True                         # the area opened on it (a boss room's only card)
         best = (0.0, None)
+        read = []
         for xy in CARD_SLOTS:
             self.tap(xy, 0.45)
             img = self.shot()
@@ -752,6 +834,7 @@ class Game:
                 score = max(score, similar(re.sub(r'(?i)^.*from', '', drops), monster))
                 if score >= 0.95:
                     return True
+            read.append(drops)
             if score > best[0]:
                 best = (score, xy)
         if best[0] < 0.75:
@@ -760,7 +843,8 @@ class Game:
             if i >= len(CARD_SLOTS):
                 return False
             self.log(f'อ่านบรรทัด "Drops from" ไม่ออก (อาจมีป้ายของในกระเป๋าค้างทับ) '
-                     f'เลือกการ์ดใบที่ {i + 1} ตามลำดับมอนในแมพแทน')
+                     f'เลือกการ์ดใบที่ {i + 1} ตามลำดับมอนในแมพแทน '
+                     f'(อ่านได้ {" / ".join(repr(t) for t in read)}: {self._save("card-drops")})')
             self.tap(CARD_SLOTS[i], 0.7)
             return True
         self.tap(best[1], 0.7)
