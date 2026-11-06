@@ -108,6 +108,14 @@ async function poll() {
     app.steps = s.steps || [];
     appendLogs(s.logs);
     if (finishedTask === 'scan' || finishedTask === 'cards') await loadConfig();
+    // the bot took a boss off the list (its card dropped): show the list it saved. The first
+    // poll only notes the count, since the config just loaded may be newer than that list.
+    const changed = s.status?.targets_changed || 0;
+    if (app.targetsChanged !== undefined && changed !== app.targetsChanged) {
+      app.bossTargets = [...(s.status.boss_targets || [])];
+      if (app.cfg?.boss) app.cfg.boss.targets = [...app.bossTargets];
+    }
+    app.targetsChanged = changed;
   } catch {
     app.online = false;
   }
@@ -252,7 +260,7 @@ function renderNow() {
 
 function renderNowBoss(st) {
   const running = app.running && st.mode === 'boss';
-  const left = app.bossTargets.filter((b) => !(st.boss_done || []).includes(b));
+  const left = app.bossTargets;   // a boss whose card dropped is taken off this list by the bot
   const current = running && st.target?.length ? st.target[1] : left[0];
   $('.now-target .label').textContent = running ? 'กำลังล่า' : 'จะล่า';
   $('#target-name').textContent = current || 'ยังไม่ได้เลือกบอส';
@@ -260,7 +268,8 @@ function renderNowBoss(st) {
   const next = left[left.indexOf(current) + 1];
   const nextBox = $('#next-step');
   nextBox.replaceChildren();
-  if (next) nextBox.append('ถัดไป ', el('strong', { text: next }), ' (ตอนได้การ์ดตัวนี้แล้ว)');
+  if (current && app.cfg?.boss?.until_card === false) nextBox.textContent = 'ตีตัวนี้ไปเรื่อยๆ (ปิด "ได้การ์ดแล้วเปลี่ยนตัว" ไว้)';
+  else if (next) nextBox.append('ถัดไป ', el('strong', { text: next }), ' (ตอนได้การ์ดตัวนี้แล้ว)');
   else if (current) nextBox.textContent = 'ตัวสุดท้ายในรายการ';
   const kills = st.kills || 0;
   const ran = running ? app.serverNow - st.started_at : 0;
@@ -738,16 +747,18 @@ function renderBossRoute() {
     const order = app.bossTargets.indexOf(b.name);
     const isDone = done.includes(b.name);
     const isNow = b.name === current;
+    // isDone: its card dropped in this run. It can be picked again and is then hunted again.
     const tile = el('button', {
       type: 'button', 'aria-pressed': order >= 0 ? 'true' : 'false', 'data-el': lookup(b.name)?.element || null,
-      class: `stop boss-tile${order >= 0 ? ' is-picked' : ''}${isNow ? ' is-now' : ''}${isDone ? ' is-done' : ''}`,
+      class: `stop boss-tile${order >= 0 ? ' is-picked' : ''}${isNow ? ' is-now' : ''}${isDone && order < 0 ? ' is-done' : ''}`,
       onclick: () => toggleBoss(b.name),
     },
     el('p', { class: 'stop-range', text: `Lv.${b.level ?? '?'}` }),
     el('p', { class: 'stop-name', text: b.name }),
-    el('p', { class: 'stop-area', text: isDone ? 'ได้การ์ดแล้ว' : order >= 0 ? `ล่าเป็นลำดับที่ ${order + 1}` : 'กดเพื่อเลือก' }));
-    if (order >= 0 && !isDone) tile.append(el('span', { class: 'boss-order', text: String(order + 1) }));
-    if (isDone) tile.append(el('span', { class: 'stop-check', 'aria-label': 'ได้การ์ดแล้ว' }, checkIcon()));
+    el('p', { class: 'stop-area', text: order >= 0 ? `ล่าเป็นลำดับที่ ${order + 1}` + (isDone ? ' · ได้การ์ดแล้ว' : '')
+      : isDone ? 'ได้การ์ดแล้ว · กดเพื่อตีอีก' : 'กดเพื่อเลือก' }));
+    if (order >= 0) tile.append(el('span', { class: 'boss-order', text: String(order + 1) }));
+    else if (isDone) tile.append(el('span', { class: 'stop-check', 'aria-label': 'ได้การ์ดแล้ว' }, checkIcon()));
     if (isNow) {
       tile.append(el('div', { class: 'pin', 'aria-hidden': 'true' },
         el('span', { class: 'pin-badge', text: 'กำลังล่า' }), el('span', { class: 'pin-tail' })));

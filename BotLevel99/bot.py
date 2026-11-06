@@ -78,6 +78,18 @@ def load_config():
         return tomllib.load(f)
 
 
+def save_boss_targets(targets):
+    """Rewrite `[boss] targets` in config.toml, keeping the line's comment."""
+    with open(CONFIG_PATH, encoding='utf-8') as f:
+        text = f.read()
+    value = json.dumps(targets, ensure_ascii=False)
+    text, n = re.subn(r'(?m)^(targets\s*=\s*)[^#\n]*?(\s*(#.*)?)$', lambda m: f'{m.group(1)}{value}{m.group(2)}', text)
+    if n != 1:
+        raise OSError('หา targets ใน config.toml ไม่เจอ')
+    with open(CONFIG_PATH, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(text)
+
+
 def load_areas():
     if not os.path.exists(MONSTERS_PATH):
         return []
@@ -100,7 +112,8 @@ class Bot:
                        'started_at': None, 'start_level': None, 'finished': False,
                        'hunts': 0, 'rejoins': 0, 'restarts': 0,
                        'mode': None, 'kills': 0, 'deaths': 0, 'hops': 0, 'cards': [], 'boss_done': [],
-                       'timed_hops': 0, 'timers': 0, 'next_due': None}
+                       'timed_hops': 0, 'timers': 0, 'next_due': None,
+                       'boss_targets': [], 'targets_changed': 0}   # set when the bot takes a boss off the list
         place = re.search(r'placeId=(\d+)', cfg['bot']['join_url'])
         self.servers = Servers(place.group(1)) if place else None
         self.failures = 0           # rounds in a row where LDPlayer/adb did not answer or a rejoin failed
@@ -588,13 +601,16 @@ class Bot:
 
     # ---- boss card farm ---------------------------------------------------
     def run_bosses(self):
-        """Go to each chosen world boss in turn: kill it when it is up, hop to another server
-        when it is down. A boss is done once its card drops (unless until_card is off)."""
+        """Hunt the first boss of `[boss] targets`: kill it when it is up, hop to another server
+        when it is down. With until_card on, a card that drops while hunting takes that boss off
+        the list (config.toml too) and the next one is hunted; a boss whose card was owned before
+        is hunted like any other. With it off the first boss is hunted for good."""
         g, st = self.game, self.status
         st.update(started_at=time.time(), finished=False, target=None, mode='boss', boss_done=[], deaths=0)
         self.stop_event.clear()
         self.deaths_here = 0
-        done = set()
+        skip = set()                    # names the bot cannot find in the monster list
+        owned_at = {}                   # boss -> its card's "Owned" the first time the book showed it this run
         hunt_fails = lost = 0
         near = None                     # boss whose room we start next to (a hop puts you back where you were)
         dismantled_at = time.time()     # [boss] dismantle_every_min counts from the start
@@ -602,10 +618,11 @@ class Bot:
         log('เริ่มฟาร์มบอส')
         while not self.stop_event.is_set():
             cfg = self.cfg.get('boss', {})      # re-read each round: the control panel can change it
-            todo = [b for b in cfg.get('targets', []) if b not in done]
+            until = cfg.get('until_card', True)
+            todo = [b for b in cfg.get('targets', []) if b not in skip]
             if not todo:
-                log('ได้การ์ดบอสครบทุกตัวที่เลือกแล้ว' if done else 'ยังไม่ได้เลือกบอสที่จะฟาร์ม (แท็บฟาร์มบอส)')
-                st['finished'] = bool(done)
+                log('ได้การ์ดบอสครบทุกตัวที่เลือกแล้ว' if st['boss_done'] else 'ยังไม่ได้เลือกบอสที่จะฟาร์ม (แท็บฟาร์มบอส)')
+                st['finished'] = bool(st['boss_done'])
                 break
             try:
                 img = self.ensure_game()
@@ -630,8 +647,7 @@ class Bot:
                 want = self.find_monster(todo[0])
                 if not want:
                     log(f'ไม่รู้จักบอส "{todo[0]}" ข้ามไป')
-                    done.add(todo[0])
-                    st['boss_done'] = sorted(done)
+                    skip.add(todo[0])
                     continue
                 if st['target'] != list(want):
                     log(f'ไปตีบอส {want[1]} ที่ {want[0]}')
@@ -645,12 +661,17 @@ class Bot:
                 hunt_fails = 0
                 st['target'] = list(want)
                 st['hunts'] += 1
-                if cfg.get('until_card', True) and g.owned:
-                    # the card page says it is ours (also catches a drop whose popup was missed)
-                    log(f'มีการ์ด {want[1]} แล้ว ไปบอสตัวถัดไป')
-                    done.add(todo[0])
-                    st['boss_done'] = sorted(done)
-                    continue
+                if not until:
+                    owned_at.pop(want[1], None)
+                elif g.owned is not None:
+                    # more copies than when this run first looked: a drop whose popup was missed
+                    # (it can come up after the hop). A card owned from before does not count.
+                    before = owned_at.setdefault(want[1], g.owned)
+                    if g.owned > before:
+                        log(f'การ์ด {want[1]} ในสมุดเพิ่มจาก {before} เป็น {g.owned} ใบ (ป้าย Obtained! อาจหลุดไป)')
+                        self.drop_boss(want[1])
+                        owned_at.pop(want[1], None)
+                        continue
                 if self.hop_started and self.servers:   # leave -> watching: how long a hop really takes
                     self.servers.note_travel(time.time() - self.hop_started)
                     self.hop_started = None
@@ -678,9 +699,10 @@ class Bot:
                     near = None                 # back in town: a long walk to the room
                     if self.deaths_here < MAX_DEATHS_HERE:
                         continue                # the boss is still up here: go again
-                if result == 'card' and cfg.get('until_card', True):
-                    done.add(todo[0])
-                    st['boss_done'] = sorted(done)
+                if result == 'card' and until:
+                    self.drop_boss(want[1])
+                    owned_at.pop(want[1], None)
+                    continue                    # the next boss may be up on this server: no hop
                 why = {'killed': f'ฆ่า {want[1]} แล้ว', 'card': f'ได้การ์ด {want[1]} แล้ว',
                        'dead': f'{want[1]} ยังไม่เกิด', 'lost': f'หา {want[1]} ไม่เจอ',
                        'died': f'ตายกับ {want[1]} {MAX_DEATHS_HERE} รอบในห้องนี้'}[result]
@@ -807,6 +829,25 @@ class Bot:
                 got |= self.card_dropped(card, boss)
             self.wait(1)
         return got
+
+    def drop_boss(self, boss):
+        """[boss] until_card: `boss`'s card dropped, so take it off the list (in config.toml too,
+        so the panel shows it unpicked and a restart does not go back to it); picking it
+        again in the panel hunts it again."""
+        st = self.status
+        if boss not in st['boss_done']:
+            st['boss_done'] = st['boss_done'] + [boss]
+        cfg = self.cfg.setdefault('boss', {})
+        left = [b for b in cfg.get('targets', []) if b != boss]
+        cfg['targets'] = left                   # the next round goes on with the rest even if saving fails
+        st['boss_targets'] = list(left)
+        st['targets_changed'] += 1
+        try:
+            save_boss_targets(left)
+        except OSError as e:
+            log(f'เอา {boss} ออกจากรายการใน config.toml ไม่สำเร็จ: {e}')
+        log(f'ได้การ์ด {boss} แล้ว → เอาออกจากรายการ' + (f' ไปตีบอส {left[0]} ต่อ' if left else ' ไม่เหลือบอสในรายการแล้ว'))
+        self.timed = None                       # the server was picked for this boss's respawn, not the next one's
 
     def card_dropped(self, name, boss):
         """Note an "Obtained!" popup (once per popup). True when it is this boss's card."""
