@@ -40,7 +40,8 @@ SETTINGS = {  # [bot] keys the panel may change: key -> (type, min, max)
 
 
 # [boss] keys newer than some config.toml files: save_boss adds them with this comment
-BOSS_ADDED = {'dismantle_every_min': 'ตอนฟาร์มบอส กด Auto Gear แล้วย่อยของทุกกี่นาที (0 = ไม่ย่อย)'}
+BOSS_ADDED = {'dismantle_every_min': 'ตอนฟาร์มบอส ย่อยของทุกกี่นาที (0 = ไม่ย่อย)',
+              'dismantle_auto_gear': 'กด Auto Gear ก่อนย่อยไหม (false = ย่อยเลย ของที่ใส่ตีบอสดีที่สุดอยู่แล้ว)'}
 
 class Panel:
     def __init__(self):
@@ -230,7 +231,6 @@ class Panel:
             'armor_sets': load_data('sets.json'),
             'classes': CLASSES,
             'autobuild_classes': list(buildsim.CLASSES),
-            'potions': [buildsim.NO_POTION, *buildsim.POTIONS],
         }
 
     # ---- saving config.toml (keeps the comments in the file) ---------------
@@ -330,21 +330,12 @@ class Panel:
         return None
 
     def auto_build(self, body):
-        """Build tab: the best Lv.99 stats, cards, Extras and set (buildsim). Always the full build; with ticked
-        cards also one limited to them, the Extras of classes at Lv.99 and the easy sets."""
+        """Build tab: the cards, Extras and armor set to use at Lv.99 (buildsim). Always the full pick; with
+        ticked cards also one limited to them, the Extras of classes at Lv.99 and the easy sets."""
         job = str(body.get('job', ''))
         if job not in buildsim.CLASSES:
             return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้ ยังไม่ได้วัดสูตร (มี {", ".join(buildsim.CLASSES)})'
-
-        def num(value, lo, hi):
-            try:
-                return min(hi, max(lo, float(value or 0)))
-            except (TypeError, ValueError):
-                return 0.0
-        potion = str(body.get('potion') or '')
-        args = dict(aspd_min=num(body.get('aspd_min'), 0, 190), crit_min=num(body.get('crit_min'), 0, 100),
-                    farm=bool(body.get('farm')), aspd_idle=bool(body.get('aspd_idle')), potion=potion if potion in buildsim.POTIONS else buildsim.NO_POTION,
-                    gear={k: num((body.get('gear') or {}).get(k), -999, 9999) for k in buildsim.GEAR_KEYS})
+        args = dict(farm=bool(body.get('farm')))
         owned = [str(n) for n in body.get('owned') or []]
         done = self.bot.cfg.get('build', {}).get('classes_99', [])
         try:
@@ -353,54 +344,6 @@ class Panel:
         except Exception as e:                    # a data file the simulator cannot read
             return None, f'คำนวณไม่สำเร็จ: {e}'
         return {'full': full, 'now': now, 'classes_99': done}, None
-
-    def read_screen(self):
-        """Build tab: read Status & Skills > Stats with the gear on (Game.read_stats_screen)."""
-        log('อ่านหน้า Stats (ตอนใส่ของอยู่) ให้แท็บ Build')
-        rd = self.bot.game.read_stats_screen()
-        if not rd:
-            log('อ่านหน้า Stats ไม่สำเร็จ')
-            return
-        self.screen_read = rd
-        p = rd['panel']
-        worn = rd.get('worn') or {}
-        if worn.get('pieces'):
-            log(f"อ่านของที่ใส่ {sum(not x.get('empty') for x in worn['pieces'])} ชิ้น"
-                + (f" · ชุด {worn['set'][0]} {worn['set'][1]}/5" if worn.get('set') and worn['set'][0] else '')
-                + (f" · การ์ด {worn['cards_worn']} ใบ" if worn.get('cards_worn') is not None else ''))
-        if rd.get('extras_removed'):
-            log('ถอด EX ออกแล้ว (ใส่คืนเองในแท็บ Skills): ' + ', '.join(rd['extras_removed']))
-        log(f"อ่านหน้า Stats แล้ว: ATK {p.get('ATK')} · ASPD {p.get('ASPD')} · Crit {p.get('Crit Rate')}%"
-            + (f" · ลองกด + {', '.join(rd['previews'])}" if rd['previews'] else ' · ไม่มีแต้มว่างให้ลองกด +'))
-
-    def gear_from_screen(self, body):
-        """What the worn gear adds, from the last Stats screen reading. Uses the class read in game (the Bag
-        title) over the one picked in the Build tab: on 2026-11-06 an Archer read as a Samurai gave ATK% -94."""
-        job = str(body.get('job', ''))
-        rd = getattr(self, 'screen_read', None)
-        if not rd:
-            return None, 'ยังไม่ได้อ่านหน้า Stats จากเกม กดปุ่ม "อ่านจากเกม" ก่อน'
-        notes = []
-        seen = rd.get('job')
-        if seen and seen != job:
-            notes.append(f'ตัวที่อ่านเป็น {seen} ไม่ใช่ {job or "อาชีพที่เลือก"} เลยคิดแบบ {seen}')
-            job = seen
-        if job not in buildsim.CLASSES:
-            return None, f'ยังคำนวณ {job or "อาชีพนี้"} ไม่ได้'
-        eq = body.get('equipped') or {}
-        equipped = {'set': str(eq.get('set') or ''), 'cards': [str(c) for c in eq.get('cards') or [] if c],
-                    'extras': [str(x) for x in eq.get('extras') or [] if x]}
-        worn = rd.get('worn') or {}
-        try:
-            if worn.get('gear'):                  # read piece by piece in the Bag: nothing to guess
-                gear, more, check = buildsim.gear_from_worn(job, rd, equipped)
-            else:
-                gear, more = buildsim.gear_from_reading(job, rd, equipped)
-                check = []
-        except Exception as e:
-            return None, f'คิดค่าชุดไม่สำเร็จ: {e}'
-        return {'gear': gear, 'notes': notes + more, 'reading': rd, 'job': job, 'check': check,
-                'worn': worn or None, 'extras_removed': rd.get('extras_removed') or []}, None
 
     def save_boss(self, values):  # noqa: C901
         """Save the [boss] section's values, keeping the comments in the file."""
@@ -420,6 +363,7 @@ class Panel:
             new[key] = str(num)
         new['until_card'] = 'true' if values.get('until_card') else 'false'
         new['follow_timers'] = 'true' if values.get('follow_timers') else 'false'
+        new['dismantle_auto_gear'] = 'true' if values.get('dismantle_auto_gear', True) else 'false'
         if values.get('server_pick') not in ('fewest', 'random', 'most'):
             return 'server_pick: เลือก fewest, random หรือ most'
         new['server_pick'] = json.dumps(values['server_pick'])
@@ -524,9 +468,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, p.state(after))
         if url.path == '/api/config':
             return self._send(200, p.config())
-        if url.path == '/api/stats/screen':
-            rd = getattr(p, 'screen_read', None)
-            return self._send(200, {'reading': rd, 'busy': p.task == 'screen'})
         if url.path == '/api/screen.jpg':
             data, shot_at = p.preview_jpeg()
             if not data:
@@ -573,11 +514,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, {'ok': True} if p.run_task('cards', p.read_cards) else busy)
         if path == '/api/autobuild':
             res, err = p.auto_build(body)
-            return self._send(200, {'ok': not err, 'error': err, **(res or {})})
-        if path == '/api/stats/screen':
-            return self._send(200, {'ok': True} if p.run_task('screen', p.read_screen) else busy)
-        if path == '/api/autobuild/gear':
-            res, err = p.gear_from_screen(body)
             return self._send(200, {'ok': not err, 'error': err, **(res or {})})
         if path == '/api/build':
             err = p.save_build(body.get('build', {}))

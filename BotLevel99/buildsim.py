@@ -402,7 +402,9 @@ def best_stats(model, e, points, aspd_min=0.0, crit_min=0.0, farm=False, start=N
 
 def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, crit_min=0.0, farm=False,
                gear=None, slots=6, card_slots=8, rounds=3, potion='Berserk Potion', aspd_idle=False):
-    """Stats, 8 cards, the Extra slots and an armour set together, a few rounds of each in turn.
+    """8 cards, the Extra slots and an armour set, chosen together a few rounds in turn (the stats are
+    chosen along the way, only so that each pick is weighed against a sensible build: the Build tab no
+    longer shows them, 2026-11-06).
     owned: card names this account has (None = every card). aspd_idle: the ASPD and Crit targets must hold
     without the class's timed buffs (Mirror Mind and the like), as on the Stats screen out of a fight."""
     model = Model(job)
@@ -460,9 +462,6 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     e = combine(base, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
     e_screen = combine(idle, pick_s[2], *(c[2] for c in pick_c), *(x[2] for x in pick_x))
     stats, left = best_stats(model, e, points, aspd_min, crit_min, farm, e_target=e_screen if aspd_idle else None)
-    pn = model.panel(stats, e)
-    ps = model.panel(stats, e_screen)
-    notes = []
     # each set with the rest kept and the stats chosen again for it
     ranking = []
     for st in sets:
@@ -474,40 +473,12 @@ def best_build(job, owned=None, unlocked=None, easy_sets=False, aspd_min=0.0, cr
     top = ranking[0]['dps'] or 1
     for r in ranking:
         r['pct'] = round(100 * r['dps'] / top, 1)
-    # Crit against ATK: LUK held at a few values, everything else chosen again
-    luk = []
-    for v in (1, 25, 50, 75, 99):
-        sl, left_l = best_stats(model, e, points, aspd_min, 0, farm, fixed={'LUK': v},
-                                e_target=e_screen if aspd_idle else None)
-        if left_l < 0:
-            continue
-        pl = model.panel(sl, e)
-        luk.append({'LUK': v, 'stats': sl, 'ATK': pl['ATK'], 'Crit Rate': pl['Crit Rate'],
-                    'ASPD': pl['ASPD'], 'dps': round(model.dps(sl, e, farm))})
-    best_luk = max((r['dps'] for r in luk), default=1) or 1
-    for r in luk:
-        r['pct'] = round(100 * r['dps'] / best_luk, 1)
-    held = ps if aspd_idle else pn                # the panel the targets were asked of
-    when = ' (ตอนไม่มีบัฟอาชีพ)' if aspd_idle else ''
-    if aspd_min and held['ASPD uncapped'] < aspd_min:
-        notes.append(f'ASPD ถึงแค่ {held["ASPD"]}{when} ไม่ถึง {aspd_min:g} ที่ตั้งไว้')
-    elif aspd_min and held['ASPD uncapped'] < aspd_min + ASPD_MARGIN:
-        notes.append(f'ASPD ตามสูตรได้ {held["ASPD uncapped"]:.1f}{when} เผื่อไม่ถึง {ASPD_MARGIN:g} '
-                     f'(สูตรคลาดได้ราว 1) ในเกมอาจขึ้น {aspd_min - 1:g} แทน {aspd_min:g}')
-    if crit_min and held['Crit Rate'] < crit_min:
-        notes.append(f'Crit ถึงแค่ {held["Crit Rate"]}%{when} ไม่ถึง {crit_min:g}% ที่ตั้งไว้')
     return {
-        'job': job, 'stats': stats, 'points_left': left, 'notes': notes,
+        'job': job,
         'cards': [{'name': c[0], 'type': c[1]} for c in pick_c],
         'extras': [{'name': x[0], 'class': x[1]} for x in pick_x],
         'set': {'name': pick_s[0], 'obtain': pick_s[1]},
-        'panel': {k: v for k, v in pn.items() if k != 'stats'},
-        'hits_per_s': round(50 / (200 - pn['ASPD']), 2),
-        'dps': round(model.dps(stats, e, farm)),
-        'potion': potion if pot else NO_POTION,
-        'panel_screen': {k: ps[k] for k in ('ATK', 'ASPD', 'ASPD uncapped', 'Crit Rate', 'Crit DMG')},
-        'aspd_idle': bool(aspd_idle),
-        'set_ranking': ranking, 'luk_compare': luk,
+        'set_ranking': ranking,
     }
 
 
@@ -520,162 +491,5 @@ if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
     for job in CLASSES:
         r = best_build(job)
-        print(job, r['stats'], r['set']['name'], [c['name'] for c in r['cards']], [x['name'] for x in r['extras']],
-              r['panel'], r['dps'])
+        print(job, r['set']['name'], [c['name'] for c in r['cards']], [x['name'] for x in r['extras']])
 
-
-def gear_from_reading(job, rd, equipped=None):
-    """What the worn gear adds, from a Stats screen reading (Game.read_stats_screen): the reading less the
-    bare class and less the cards, Extras and set worn then (equipped: {'set': name, 'cards': [...],
-    'extras': [...]}). ATK% and attack speed % come from the +10 previews; without them (no free points)
-    the gear is taken to add none. Returns (gear for best_build, notes)."""
-    m = Model(job)
-    equipped = dict(equipped or {})
-    if not equipped.get('extras') and rd.get('extras'):
-        equipped['extras'] = [x for x in rd['extras'] if x]       # what the Skills tab showed slotted
-    cards = {c[0]: c[2] for c in all_cards(job)}
-    extras = {x['name']: parse_effect(x['effect']) for x in _data('extras.json')['extras']}
-    sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
-    # buffs and the potion up at the time (read off the buff bar) count in the screen too: take them out
-    up = [{k: v for k, v in (BUFF_EFFECTS.get(b) or POTIONS.get(b) or {}).items() if k != 'level'}
-          for b in rd.get('buffs') or []]
-    pct = combine(*up).get('stat_pct', {})
-    eq = combine(sets.get(equipped.get('set'), {}), *(cards[n] for n in equipped.get('cards', []) if n in cards),
-                 *(extras[n] for n in equipped.get('extras', []) if n in extras),
-                 *({k: v for k, v in u.items() if k != 'stat_pct'} for u in up))
-    stats, bonus, pan, sp = rd['stats'], rd['bonus'], rd['panel'], rd.get('special', {})
-    notes = [f"หักบัฟที่ติดอยู่ตอนอ่านออกแล้ว: {', '.join(rd['buffs'])}"] if rd.get('buffs') else []
-    gear = {}
-    t = {s: int(stats[s] + (bonus.get(s) or 0)) for s in STAT_NAMES}             # as the screen worked it out
-    for s in STAT_NAMES:
-        before_pct = round(t[s] / (1 + pct.get(s, 0)))                           # Forest Pulse adds a % on top
-        gear[s] = int(before_pct - stats[s] - m.bonus[s] - eq.get(s, 0))
-    main = m.c['main']
-    pv = rd.get('previews', {})
-    p_atk = m.atk_pct0 + eq.get('atk_pct', 0)
-    if pv.get(main, {}).get('ATK'):
-        grown = round(t[main] / (1 + pct.get(main, 0))) + pv[main]['add']
-        t2 = dict(t, **{main: int(grown * (1 + pct.get(main, 0)))})
-        p_atk = pv[main]['ATK'] / (m._atk_raw(t2, {}) - m._atk_raw(t, {})) / K_ATK - 1
-    else:
-        notes.append('ไม่มีแต้มว่างให้ลองกด + เลยถือว่าชุดไม่ได้ให้ ATK% (ATK ที่เกินมานับเป็น ATK ตัวเลข)')
-    if pan.get('ATK'):
-        flat = pan['ATK'] / ((1 + p_atk) * K_ATK) - (m._atk_raw(t, {}) + m.atk_x)
-        gear['atk'] = round(flat - eq.get('atk', 0))
-    gear['atk_pct'] = round(100 * (p_atk - m.atk_pct0 - eq.get('atk_pct', 0)), 1)
-    agi = pv.get('AGI', {})
-    keep = (1 - m.c['aspd_pct']) * (1 - eq.get('aspd_pct', 0))       # what is known to shrink the gap
-    seen_keep = keep
-    shown = pan.get('ASPD')
-    if shown and shown >= 190:
-        notes.append('ASPD ตอนอ่านตันที่ 190 แล้ว บอกไม่ได้ว่าชุดให้ความเร็วเกินมาเท่าไหร่')
-    elif agi.get('ASPD') and shown + agi['ASPD'] > 189:
-        notes.append('ลองกด AGI แล้ว ASPD ชน 190 เลยใช้หาว่าความเร็วเพิ่มกี่ % ไม่ได้')
-    elif agi.get('ASPD'):
-        grown = int((round(t['AGI'] / (1 + pct.get('AGI', 0))) + agi['add']) * (1 + pct.get('AGI', 0)))
-        seen_keep = agi['ASPD'] * 250 / ((grown - t['AGI']) * m.W)          # AGI the preview really added
-    else:
-        notes.append('ไม่มีแต้มว่างให้ลองกด AGI เลยถือว่าชุดไม่ได้ให้ Attack Speed %')
-    if shown and shown < 190:                         # at the cap the flat part cannot be told either
-        def gap(tt):
-            return m.W * seen_keep * (1 - tt['AGI'] / 250 - tt['DEX'] / 1000)
-        real = shown + 0.5                            # the screen rounds down: somewhere in [shown, shown + 1)
-        for s in ('AGI', 'DEX'):                      # a + preview that stopped at 190 tells it exactly
-            d = pv.get(s, {}).get('ASPD')
-            if d is None:
-                continue
-            grown = int((round(t[s] / (1 + pct.get(s, 0))) + pv[s]['add']) * (1 + pct.get(s, 0)))
-            if gap(t) - gap(dict(t, **{s: grown})) > d + 0.15 and shown + d > 189:
-                real = 190 - d
-                notes.append(f'ASPD จริงราว {real:.1f} (หน้า Stats ปัดเศษลงเป็น {shown:g}) '
-                             f'ดูจากที่ลองกด {s} แล้วขึ้นแค่ +{d:g} เพราะชน 190')
-                break
-        gear['aspd'] = round(real - (200 - gap(t)) - eq.get('aspd', 0), 1)
-    seen_pct = round(100 * (1 - seen_keep / keep), 1)
-    gear['aspd_pct'] = 0.0                            # gear cannot give attack speed % (data/gear.json)
-    if pan.get('Crit Rate') is not None:
-        gear['crit'] = round(pan['Crit Rate'] - (m.crit0 + m.c['crit_k'] * t['LUK']) - eq.get('crit', 0), 1)
-    if sp.get('Crit DMG') is not None:
-        gear['crit_dmg'] = round(sp['Crit DMG'] - m.crit_dmg0 - eq.get('crit_dmg', 0))
-    if sp.get('DEF Pen') is not None:
-        gear['def_pen'] = round(sp['DEF Pen'] - 100 * eq.get('def_pen', 0))
-    if equipped.get('extras'):
-        notes.append(f"หัก EX ที่ใส่อยู่ออกแล้ว: {', '.join(equipped['extras'])}")
-    # gear cannot give these (data/gear.json): what shows is cards or Extras not taken out
-    if seen_pct > 1.5:
-        notes.append(f"ชุดให้ Attack Speed % ไม่ได้ (แหวนให้ ASPD เป็นตัวเลขเท่านั้น) ที่เห็น +{seen_pct}% "
-                     'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
-    if gear.get('atk_pct', 0) > 12:
-        notes.append(f"ชุดให้ ATK% ได้ราว 10% เท่านั้น (Special ของอาวุธ) ที่เห็น +{gear['atk_pct']}% "
-                     'น่าจะมาจากการ์ดหรือ EX ที่ใส่อยู่แต่ยังไม่ได้เลือก')
-    neg = [k for k in ('atk', 'atk_pct', 'crit', 'crit_dmg') if gear.get(k, 0) < -2]
-    if neg:
-        notes.append('ค่าติดลบ (' + ', '.join(neg) + ') แปลว่าการ์ด EX ชุดเซ็ทที่เลือกว่าใส่อยู่ไม่ตรงกับในเกม '
-                     'หรือมียา/บัฟค้างตอนอ่าน')
-    return gear, notes
-
-
-def gear_from_worn(job, rd, equipped=None):
-    """What the worn gear adds, from the pieces read one by one in the Bag (Game.worn_gear): their options
-    added up, nothing guessed. The Stats screen read with them (Extras taken out) is then worked out from
-    those numbers and compared, line by line, so a mismatch shows instead of hiding in the gear.
-    equipped: {'cards': [...]} for cards worn (the bot only counts them). Returns (gear, notes, check)."""
-    worn = rd.get('worn') or {}
-    gear = {k: v for k, v in (worn.get('gear') or {}).items() if k in GEAR_KEYS}
-    notes = []
-    m = Model(job)
-    set_name, pieces = (worn.get('set') or [None, 0])[:2]
-    sets = {s['name']: set_effects(s) for s in _data('sets.json')['sets']}
-    set_e = sets.get(set_name, {}) if pieces >= 5 else {}
-    if set_name and pieces < 5:
-        notes.append(f'ใส่ {set_name} แค่ {pieces}/5 ชิ้น โบนัสเซ็ทยังไม่ติด')
-    cards = {c[0]: c[2] for c in all_cards(job)}
-    picked = [n for n in (equipped or {}).get('cards', []) if n in cards]
-    n_cards = worn.get('cards_worn')
-    if n_cards and len(picked) < n_cards:
-        notes.append(f'ใส่การ์ดอยู่ {n_cards} ใบ แต่เลือกไว้ {len(picked)} ใบ เลือกการ์ดที่ใส่ด้วย (บอทยังอ่านชื่อการ์ดไม่ได้)')
-    empty = [p['slot'] for p in worn.get('pieces', []) if p.get('empty')]
-    if empty:
-        notes.append('ช่องที่ไม่มีของหรืออ่านไม่ได้: ' + ', '.join(empty))
-    up = [{k: v for k, v in (BUFF_EFFECTS.get(b) or POTIONS.get(b) or {}).items() if k != 'level'}
-          for b in rd.get('buffs') or []]
-    if rd.get('buffs'):
-        notes.append('ตอนอ่านมีบัฟติดอยู่ (' + ', '.join(rd['buffs']) + ') ครั้งหน้าอย่ากดบัฟก่อนอ่าน')
-    g = {k: (v / 100 if k in ('atk_pct', 'aspd_pct', 'def_pen', 'dmg_pct') else v) for k, v in gear.items()}
-    e = combine(g, set_e, *(cards[n] for n in picked), *up)
-    check = []
-    stats = rd.get('stats') or {}
-    if stats and all(stats.get(s) for s in STAT_NAMES):
-        pn = m.panel(stats, e)
-        for row, key, tol in (('ATK', 'ATK', 2), ('ASPD', 'ASPD uncapped', 1), ('Crit Rate', 'Crit Rate', 1)):
-            seen = (rd.get('panel') or {}).get(row)
-            if seen is None:
-                continue
-            want = pn[key]
-            ok = (seen <= want < seen + 1) if row == 'ASPD' else abs(want - seen) <= tol   # ASPD shows rounded down
-            check.append({'row': row, 'screen': seen, 'items': round(want, 1), 'ok': bool(ok)})
-        cd = (rd.get('special') or {}).get('Crit DMG')
-        if cd is not None:
-            want = m.crit_dmg0 + e.get('crit_dmg', 0)
-            check.append({'row': 'Crit DMG', 'screen': cd, 'items': want, 'ok': abs(cd - want) <= 1})
-        for s in STAT_NAMES:
-            seen = (rd.get('bonus') or {}).get(s)
-            if seen is None:
-                continue
-            want = m.bonus[s] + e.get(s, 0)
-            check.append({'row': f'{s} bonus', 'screen': seen, 'items': want, 'ok': abs(seen - want) < 0.5})
-        pv = (rd.get('previews') or {}).get(m.c['main'])
-        if pv and pv.get('ATK'):
-            t = m._totals(stats, {s: e.get(s, 0) for s in STAT_NAMES})
-            main = m.c['main']
-            t2 = dict(t, **{main: t[main] + pv['add']})
-            raw = m._atk_raw(t2, {}) - m._atk_raw(t, {})
-            seen_pct = round(100 * (pv['ATK'] / raw / K_ATK - 1 - m.atk_pct0), 1)
-            want_pct = round(100 * e.get('atk_pct', 0), 1)
-            check.append({'row': f'ATK% (ลองกด {main} +{pv["add"]})', 'screen': seen_pct, 'items': want_pct,
-                          'ok': abs(seen_pct - want_pct) <= 1.5})
-        bad = [c for c in check if not c['ok']]
-        if bad:
-            notes.append('ไม่ตรงกับหน้า Stats: ' + ', '.join(f"{c['row']} เกม {c['screen']:g} / คิดจากของ {c['items']:g}"
-                                                              for c in bad))
-    return gear, notes, check

@@ -204,7 +204,14 @@
             <label class="field">
               <span class="field-name">ย่อยของทุกกี่นาที</span>
               <input type="number" name="dismantle_every_min" min="0" max="600" required>
-              <span class="field-help">กด Auto Gear ให้ใส่ของดีกว่าก่อน แล้วย่อยของที่เหลือในกระเป๋า (ไม่กด Auto Card การ์ดที่เลือกไว้อยู่เหมือนเดิม) 0 = ไม่ย่อย</span>
+              <span class="field-help">ย่อยของที่เหลือในกระเป๋า (ไม่กด Auto Card การ์ดที่เลือกไว้อยู่เหมือนเดิม) 0 = ไม่ย่อย</span>
+            </label>
+            <label class="field field-toggle">
+              <input type="checkbox" name="dismantle_auto_gear" class="toggle">
+              <span>
+                <span class="field-name">กด Auto Gear ก่อนย่อย</span>
+                <span class="field-help">ปิด = ย่อยเลยไม่เปลี่ยนชุด (ของที่ใส่ตีบอสดีที่สุดอยู่แล้ว) เปิด = ใส่ของที่ดีกว่าที่เพิ่งได้ก่อนแล้วค่อยย่อย</span>
+              </span>
             </label>
             <label class="field">
               <span class="field-name">เข้าห้องแล้วกดปุ่ม O ซูมกล้องออกกี่ครั้ง</span>
@@ -287,23 +294,8 @@
           <div class="class-list" id="class-99"></div>
         </fieldset>
         <section class="auto-build" aria-labelledby="ab-title">
-          <h3 class="build-title" id="ab-title">คำนวณ Build อัตโนมัติ <small>Lv.99 จากสูตรของเกมที่วัดจาก 6 อาชีพ</small></h3>
+          <h3 class="build-title" id="ab-title">แนะนำการ์ด EX และชุดเซ็ท <small>Lv.99 ไม่คิด Stats ให้ เพราะสูตรของ EX การ์ด และอาวุธยังรู้ไม่พอ</small></h3>
           <div class="ab-inputs">
-            <label class="field">
-              <span class="field-name">ASPD อย่างน้อย</span>
-              <input type="number" id="ab-aspd" min="0" max="190" step="1" value="190">
-              <span class="field-help">ตันที่ 190 (ตี 5 ครั้งต่อวินาที) ใส่ 0 = ไม่บังคับ</span>
-            </label>
-            <label class="field">
-              <span class="field-name">Crit อย่างน้อย (%)</span>
-              <input type="number" id="ab-crit" min="0" max="100" step="1" value="0">
-              <span class="field-help">0 = ให้คิดเองว่าคุ้มแค่ไหน</span>
-            </label>
-            <label class="field">
-              <span class="field-name">ยาเร่งความเร็ว</span>
-              <select id="ab-potion"></select>
-              <span class="field-help">ติดได้ทีละขวด ขวดแรงกว่าบังขวดอ่อนกว่า</span>
-            </label>
             <label class="field">
               <span class="field-name">ตีแบบไหน</span>
               <select id="ab-mode">
@@ -312,26 +304,9 @@
               </select>
             </label>
           </div>
-          <label class="check check-small"><input type="checkbox" id="ab-idle"> ASPD กับ Crit ต้องถึงแม้บัฟอาชีพ (เช่น Mirror Mind) ไม่ติด</label>
-          <p class="field-help">หน้า Stats ในเกมปัดเศษ ASPD ลง (189.9 โชว์ 189) เลยคิดเผื่อไว้ 0.5 เช่นตั้ง 190 จะอัพให้ถึง 190.5 ตามสูตร</p>
-          <details class="ab-more">
-            <summary>ของที่ใส่อยู่ให้อะไรบ้าง (ไม่ใส่ก็ได้ = คิดแบบไม่ใส่ของ)</summary>
-            <p class="field-help">รวมออปของทุกชิ้นที่ใส่อยู่ เช่น แหวน Special ASPD +3 ใส่ 3 ในช่อง ASPD, อาวุธ Crit Rate 12 ใส่ 12 ในช่อง Crit Rate, ATK พื้นฐานของอาวุธใส่ในช่อง ATK</p>
-            <div class="ab-read">
-              <p class="field-help"><b>หรือให้บอทอ่านจากในเกม:</b> หยุดบอทก่อน ใส่ชุดไว้ <b>ห้ามกดบัฟ สกิลบัฟ (เช่น Mirror Mind) หรือกินยาเร่งก่อนกดอ่าน ถ้าเพิ่งกดไปให้รอจนบัฟหมด</b> บอทจะเปิดดูของที่ใส่ในกระเป๋าทีละชิ้น (กดช่องแล้วกดซ้ำเพื่อปิด ไม่กด Unequip) ถอด EX ที่ใส่อยู่ออกให้ (บอกชื่อไว้ให้ใส่คืนเองในแท็บ Skills) แล้วอ่านหน้า Stats ถ้ามีแต้มว่างจะลองกด + ที่ STR, DEX, AGI แล้วกด Clear (ไม่กด Confirm) ค่าชุดในช่องด้านล่างมาจากของทีละชิ้น แล้วเทียบกับหน้า Stats ให้ดูว่าตรงไหม ถ้าใส่การ์ดอยู่ให้เลือกการ์ดที่ใส่ในช่องการ์ดด้วย (บอทยังอ่านชื่อการ์ดไม่ได้)</p>
-              <div class="ab-equipped" id="ab-equipped"></div>
-              <div class="panel-actions">
-                <button class="btn btn-blue btn-small" id="ab-read" type="button">อ่านจากเกม</button>
-                <button class="btn btn-ghost btn-small" id="ab-read-again" type="button" hidden>คิดค่าชุดใหม่จากที่อ่านไว้</button>
-                <span class="form-msg" id="ab-read-msg" role="status"></span>
-              </div>
-              <div class="ab-worn" id="ab-worn" hidden></div>
-            </div>
-            <div class="ab-gear" id="ab-gear"></div>
-          </details>
           <details class="ab-more">
             <summary>การ์ดที่มี <span id="ab-cards-count"></span></summary>
-            <p class="field-help">ไม่ติ๊กเลย = คิดแค่ Full Build จากการ์ดทุกใบ ติ๊กไว้ = ขึ้นอีกแบบที่ใช้แค่การ์ดที่ติ๊ก</p>
+            <p class="field-help">ไม่ติ๊กเลย = แนะนำจากการ์ดทุกใบ ติ๊กไว้ = ขึ้นอีกแบบที่ใช้แค่การ์ดที่ติ๊ก</p>
             <div class="panel-actions">
               <button class="btn btn-ghost btn-small" id="ab-cards-owned" type="button">ติ๊กตามที่อ่านจาก Card Book</button>
               <button class="btn btn-ghost btn-small" id="ab-cards-none" type="button">ล้างที่ติ๊ก</button>
@@ -341,7 +316,7 @@
           <div class="panel-actions">
             <span class="form-msg" id="ab-msg" role="status"></span>
             <span class="spacer"></span>
-            <button class="btn btn-go" id="ab-run" type="button">คำนวณ</button>
+            <button class="btn btn-go" id="ab-run" type="button">แนะนำ</button>
           </div>
           <div class="build-cols" id="ab-cols" hidden>
             <section class="build-col" id="ab-now-col" aria-labelledby="ab-now-title">
@@ -349,23 +324,13 @@
               <div id="ab-now"></div>
             </section>
             <section class="build-col is-full" aria-labelledby="ab-full-title">
-              <h3 class="build-title" id="ab-full-title">Full Build <small>การ์ด EX และชุดครบทุกอย่าง</small></h3>
+              <h3 class="build-title" id="ab-full-title">ครบทุกอย่าง <small>การ์ดทุกใบ EX ทุกอาชีพ และทุกชุด</small></h3>
               <div id="ab-full"></div>
             </section>
           </div>
-          <details class="build-notes">
-            <summary>คิดยังไง และข้อสมมติ</summary>
-            <ul>
-              <li>ค่าในหน้า Stats คิดจากสูตรของเกม (ตรงกับที่วัดจากตัว Lv.99 ทั้ง 6 อาชีพ คลาดไม่เกิน 1–2 แต้ม) ไม่นับของสวมใส่ นอกจากที่กรอกไว้ข้างบน</li>
-              <li>ดาเมจต่อวินาทีเป็นตัวเลขเทียบกันเอง: สกิลที่พร้อมใช้ก่อนตีปกติ สกิลที่ตามความเร็ว ASPD ใช้ทุกครั้งที่ตี บัฟของอาชีพติดตลอด (Fade 8 วิใน 20 วิ)</li>
-              <li>สมมติว่าเกราะของมอนลดดาเมจ 30% DEF Pen ช่วยลดส่วนนี้ (ยังไม่ได้วัด) และเวทไม่คริ</li>
-              <li>Double Hit นับเฉพาะการตีปกติ (อาชีพที่มีสกิลตามความเร็ว ASPD จะใช้สกิลแทนตีปกติ)</li>
-              <li>ยาเร่งความเร็วนับ Attack Speed % กับ Cast Speed ตามคำในเกม ยังไม่ได้นับว่า Cast Speed ทำให้สกิลออกเร็วขึ้นแค่ไหน</li>
-              <li>ตาราง "เทียบ Crit กับ ATK" ล็อก LUK ไว้แต่ละค่า แล้วให้ Stats ที่เหลือคิดใหม่ทุกแถว การ์ด EX ชุดใช้ชุดเดียวกับผลลัพธ์</li>
-            </ul>
-          </details>
+          <p class="field-help">เลือกจากว่าการ์ด EX และชุดไหนเพิ่มดาเมจได้มากสุดตามสูตรที่วัดไว้ ใช้เป็นแนวทาง ตัวเลขดาเมจจริงอาจต่างไป</p>
         </section>
-        <h3 class="build-title build-old-title">Build ที่เขียนไว้เอง <small>ข้อมูลเดิม ก่อนมีตัวคำนวณ</small></h3>
+        <h3 class="build-title build-old-title">การ์ด EX และชุดที่เขียนไว้เอง <small>ข้อมูลเดิม ก่อนมีตัวแนะนำ</small></h3>
         <p class="panel-intro" id="build-summary"></p>
         <div class="build-cols" id="build-cols">
           <section class="build-col" aria-labelledby="build-now-title">

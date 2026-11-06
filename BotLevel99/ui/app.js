@@ -665,6 +665,7 @@ function fillBoss() {
   form.elements.after_kill_s.value = cfg.after_kill_s ?? 2;
   form.elements.zoom_out_clicks.value = cfg.zoom_out_clicks ?? 10;
   form.elements.dismantle_every_min.value = cfg.dismantle_every_min ?? 0;
+  form.elements.dismantle_auto_gear.checked = cfg.dismantle_auto_gear ?? true;
   form.elements.until_card.checked = cfg.until_card ?? true;
   form.elements.follow_timers.checked = cfg.follow_timers ?? true;
   form.elements.timed_wait_s.value = cfg.timed_wait_s ?? 40;
@@ -685,6 +686,7 @@ function bossValues() {
     after_kill_s: Number(form.elements.after_kill_s.value),
     zoom_out_clicks: Number(form.elements.zoom_out_clicks.value),
     dismantle_every_min: Number(form.elements.dismantle_every_min.value),
+    dismantle_auto_gear: form.elements.dismantle_auto_gear.checked,
     until_card: form.elements.until_card.checked,
     follow_timers: form.elements.follow_timers.checked,
     timed_wait_s: Number(form.elements.timed_wait_s.value),
@@ -817,9 +819,7 @@ function renderBuild() {
   const setFull = sets.find((x) => x.full) || sets[0];
 
   // full: the top of each list
-  const fullStats = b.stats.full;
   $('#build-full').replaceChildren(...[
-    statBlock(fullStats),
     setFull && slotList('ชุดเซ็ท', [setRow(d, setFull)]),
     slotList('Extra 6 ช่อง', exList.slice(0, 6).map((x) => extraRow(d, x.name, x.why))),
     slotList('การ์ด 8 ใบ', b.cards.slice(0, 8).map((c) => cardRow(d, c.monster, c.why, c.gain))),
@@ -837,9 +837,7 @@ function renderBuild() {
   const cardNow = b.cards_now.filter((n) => owned(n)).slice(0, 8);
   const why = (n) => b.cards.find((c) => c.monster === n) || { why: b.card_notes?.[n] };
   const hunt = b.cards.filter((c) => !owned(c.monster)).slice(0, 4);
-  const nowStats = owned('Whitefang Sabertooth') && b.stats.whitefang ? b.stats.whitefang : b.stats.now;
   $('#build-now').replaceChildren(...[
-    statBlock(nowStats),
     setNow && slotList('ชุดเซ็ท', [setRow(d, setNow)]),
     slotList(`Extra ${exNow.length}/6 ช่อง`, exRows),
     slotList(`การ์ด ${cardNow.length}/8 ใบ`, cardNow.map((n) => cardRow(d, n, why(n).why, why(n).gain))),
@@ -848,13 +846,6 @@ function renderBuild() {
 
   $('#build-assumes').replaceChildren(...(b.assumes || []).map((t) => el('li', { text: t })));
   $('#build-sets').textContent = b.sets || '';
-}
-
-function statBlock(s) {
-  return el('div', { class: 'build-stats' },
-    el('div', { class: 'stat-now' }, ...['STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK'].filter((k) => s[k]).map((k) =>
-      el('span', { class: 'stat-chip' }, el('b', { 'data-stat': k, text: k }), String(s[k])))),
-    el('p', { class: 'field-help', text: s.note || '' }));
 }
 
 function slotList(title, rows) {
@@ -907,30 +898,13 @@ $('#class-99').addEventListener('change', () => saveBuild({
 $('#cards-read').addEventListener('click', () => api('/api/cards/read', {}).catch(() => null));
 
 // ---- auto build (buildsim.py) -----------------------------------------------
-// The server works out the best Lv.99 stats, cards, Extras and set from the game's formulas; this is
-// the form (targets, what the worn gear adds, the cards owned) and the two results.
-const AB_GEAR = [['atk', 'ATK'], ['atk_pct', 'ATK %'], ['aspd', 'ASPD'], ['aspd_pct', 'Attack Speed %'],
-  ['crit', 'Crit Rate'], ['crit_dmg', 'Crit DMG %'], ['def_pen', 'DEF Pen %'],
-  ['STR', 'STR'], ['AGI', 'AGI'], ['DEX', 'DEX'], ['LUK', 'LUK']];
+// The server picks the cards, Extras and armor set that add the most damage under the measured formulas;
+// this is the form (how the fights go, the cards owned) and the two results.
 let abBuilt = false;
 
 function renderAutoBuildForm(d) {
   if (abBuilt || !d.cfg.cards?.areas) return;
   abBuilt = true;
-  $('#ab-potion').replaceChildren(...(d.cfg.potions || []).map((p) => el('option', { value: p, text: p })));
-  $('#ab-potion').value = 'Berserk Potion';
-  // what was worn when the Stats screen was read: taken back out so only the gear is left
-  const pick = (label, names, key) => el('label', { class: 'ab-eq' }, el('span', { class: 'field-help', text: label }),
-    el('select', { 'data-eq': key }, el('option', { value: '', text: '—' }), ...names.map((n) => el('option', { value: n, text: n }))));
-  const cardNames = d.cfg.cards.areas.flatMap((a) => a.cards.map((c) => c.monster));
-  const exNames = (d.cfg.extras?.extras || []).filter((x) => !x.class_only).map((x) => x.name);
-  $('#ab-equipped').replaceChildren(
-    pick('ชุดเซ็ทที่ใส่ครบ 5 ชิ้น', (d.cfg.armor_sets?.sets || []).map((s) => s.name), 'set'),
-    ...[1, 2, 3, 4, 5, 6].map((i) => pick(`EX ช่อง ${i}`, exNames, 'extras')),
-    ...[1, 2, 3, 4, 5, 6, 7, 8].map((i) => pick(`การ์ดใบ ${i}`, cardNames, 'cards')));
-  $('#ab-gear').replaceChildren(...AB_GEAR.map(([key, label]) => el('label', { class: 'field' },
-    el('span', { class: 'field-name', text: label }),
-    el('input', { type: 'number', step: 'any', value: '0', 'data-gear': key }))));
   $('#ab-cards').replaceChildren(...d.cfg.cards.areas.map((a) => el('fieldset', { class: 'ab-area' },
     el('legend', { class: 'field-name', text: a.area }),
     ...a.cards.map((c) => el('label', { class: 'check check-small' },
@@ -946,124 +920,15 @@ function abCount() {
 }
 
 function abResult(d, r) {
-  const p = r.panel;
-  const nums = [['ATK', p.ATK], ['MATK', p.MATK], ['ASPD', `${p.ASPD} (${r.hits_per_s} ครั้ง/วิ · สูตรได้ ${Number(p['ASPD uncapped']).toFixed(1)})`],
-    ['Crit', `${p['Crit Rate']}%`], ['Crit DMG', `+${p['Crit DMG']}%`], ['HP', p['Max HP'].toLocaleString()],
-    ['ดาเมจ/วิ', r.dps.toLocaleString()]];
-  const names = d.cfg.stat_names || ['STR', 'AGI', 'VIT', 'INT', 'DEX', 'LUK'];
-  const use = el('button', { class: 'btn btn-blue btn-small', type: 'button', text: 'ใช้ Stats นี้กับบอท' });
-  use.addEventListener('click', async () => {
-    const text = names.map((k) => `${k} ${r.stats[k]}`).join(' · ');
-    if (!confirm(`แทนตารางอัพ Stats ของ ${r.job} ด้วยแถวเดียว ถึง Lv.99: ${text}`)) return;
-    const res = await api('/api/stats', { job: r.job, rows: [{ level: 99, ...r.stats }] }).catch(() => null);
-    setMsg('#ab-msg', res?.ok ? `บันทึกตารางอัพ Stats ของ ${r.job} แล้ว` : (res?.error || 'บันทึกไม่สำเร็จ'), res?.ok ? 'ok' : 'bad');
-    if (res?.ok) await loadConfig();
-  });
-  const setItem = r.set.obtain ? setRow(d, { set: r.set.name })
-    : el('li', { class: 'slot is-empty' }, el('span', { class: 'slot-name', text: r.set.name }));
   return [
-    statBlock({ ...r.stats, note: r.points_left ? `เหลือ ${r.points_left} แต้ม` : 'ใช้แต้มครบ 1,244' }),
-    el('div', { class: 'ab-panel' }, ...nums.map(([k, v]) => el('span', { class: 'stat-chip' }, el('b', { text: k }), String(v)))),
-    ...(r.notes || []).map((t) => el('p', { class: 'form-msg', 'data-tone': 'bad', text: t })),
-    el('p', { class: 'field-help', text: `Cast Speed +${p['Cast Speed']}% · ยา: ${r.potion}` }),
-    r.panel_screen && (r.panel_screen.ASPD !== p.ASPD || r.panel_screen['Crit Rate'] !== p['Crit Rate'])
-      && el('p', { class: 'field-help', text: `หน้า Stats ตอนไม่ได้ตี (บัฟของอาชีพยังไม่ติด): ASPD ${r.panel_screen.ASPD} (สูตร ${Number(r.panel_screen['ASPD uncapped']).toFixed(1)}) · Crit ${r.panel_screen['Crit Rate']}% · ATK ${r.panel_screen.ATK} ส่วนตัวเลขด้านบนคือตอนตีที่บัฟติด` }),
-    slotList('ชุดเซ็ท', [setItem]),
-    slotList('ชุดเซ็ทเรียงจากดีสุด (ไม่มีตัวบน ใส่ตัวถัดไป)', (r.set_ranking || []).map((s) =>
-      el('li', { class: 'slot' }, el('span', { class: 'slot-name', text: s.name }),
-        el('span', { class: 'slot-tag', 'data-ok': s.obtain === 'easy' ? '1' : null,
-          text: `${s.pct}%${s.obtain ? ` · ${OBTAIN[s.obtain] || ''}` : ''}` })))),
     slotList(`Extra ${r.extras.length} ช่อง`, r.extras.map((x) => extraRow(d, x.name, ''))),
     slotList(`การ์ด ${r.cards.length} ใบ`, r.cards.map((c) => cardRow(d, c.name, '', null))),
-    abLukTable(r),
-    el('div', { class: 'panel-actions' }, el('span', { class: 'spacer' }), use),
-  ].filter(Boolean);
+    slotList('ชุดเซ็ทเรียงจากดีสุด (ไม่มีตัวบน ใส่ตัวถัดไป)', (r.set_ranking || []).map((x) =>
+      el('li', { class: 'slot' }, el('span', { class: 'slot-name', text: x.name }),
+        el('span', { class: 'slot-tag', 'data-ok': x.obtain === 'easy' ? '1' : null,
+          text: `${x.pct}%${x.obtain ? ` · ${OBTAIN[x.obtain] || ''}` : ''}` })))),
+  ];
 }
-
-function abLukTable(r) {
-  if (!r.luk_compare?.length) return null;
-  return el('div', { class: 'slot-group' }, el('p', { class: 'slot-title', text: 'เทียบ Crit กับ ATK (ล็อก LUK แล้วคิด Stats ที่เหลือใหม่)' }),
-    el('div', { class: 'table-wrap' }, el('table', { class: 'monsters ab-luk' },
-      el('thead', {}, el('tr', {}, ...['LUK', 'Crit', 'ATK', 'ASPD', 'ดาเมจเทียบ'].map((h) => el('th', { class: h === 'LUK' ? '' : 'num', text: h })))),
-      el('tbody', {}, ...r.luk_compare.map((x) => el('tr', { class: x.pct >= 99.95 ? 'is-best' : '' },
-        el('td', { text: String(x.LUK) }), el('td', { class: 'num', text: `${x['Crit Rate']}%` }),
-        el('td', { class: 'num', text: String(x.ATK) }), el('td', { class: 'num', text: String(x.ASPD) }),
-        el('td', { class: 'num', text: `${x.pct}%` })))))));
-}
-
-// read the Stats screen in game, then turn the reading into gear numbers
-function abEquipped() {
-  const sel = (k) => [...document.querySelectorAll(`#ab-equipped [data-eq="${k}"]`)].map((s) => s.value).filter(Boolean);
-  return { set: sel('set')[0] || '', extras: sel('extras'), cards: sel('cards') };
-}
-
-const AB_OPT = ([name, value, pct]) => `${name} +${value}${pct ? '%' : ''}`;
-
-function abShowWorn(res) {
-  const box = $('#ab-worn');
-  if (!res.worn?.pieces) {
-    box.hidden = true;
-    return;
-  }
-  const pieces = res.worn.pieces.map((p) => el('li', { class: 'slot' },
-    el('span', { class: 'slot-name', text: p.slot }),
-    el('span', { class: 'field-help', text: p.empty ? 'ไม่มีของ / อ่านไม่ได้'
-      : [...p.base, ...p.refine.map((o) => `ตีบวก ${AB_OPT(o)}`), ...p.special.map((o) => `★ ${AB_OPT(o)}`),
-        ...p.random].map((o) => (typeof o === 'string' ? o : AB_OPT(o))).join(' · ') })));
-  const [setName, n] = res.worn.set || [];
-  const rows = (res.check || []).map((c) => el('li', { class: 'slot' },
-    el('span', { class: 'slot-name', text: c.row }),
-    el('span', { class: 'slot-tag', 'data-ok': c.ok ? '1' : null,
-      text: `เกม ${c.screen} · คิดจากของ ${c.items}${c.ok ? '' : ' ✗'}` })));
-  box.replaceChildren(
-    slotList(`ของที่ใส่ ${res.worn.pieces.filter((p) => !p.empty).length} ชิ้น${setName ? ` · ${setName} ${n}/5` : ''}`
-      + `${res.worn.cards_worn != null ? ` · การ์ด ${res.worn.cards_worn}/8` : ''}`, pieces),
-    ...(res.extras_removed?.length ? [el('p', { class: 'form-msg', 'data-tone': 'bad',
-      text: `บอทถอด EX ออกให้แล้ว อย่าลืมใส่คืนในแท็บ Skills: ${res.extras_removed.join(', ')}` })] : []),
-    ...(rows.length ? [slotList('เทียบกับหน้า Stats (✗ = ไม่ตรง)', rows)] : []));
-  box.hidden = false;
-}
-
-async function abGearFromReading() {
-  const res = await api('/api/autobuild/gear', { job: buildData().job, equipped: abEquipped() }).catch(() => null);
-  if (!res?.ok) return setMsg('#ab-read-msg', res?.error || 'คิดค่าชุดไม่สำเร็จ', 'bad');
-  if (res.job && res.job !== buildData().job) await saveBuild({ class: res.job });   // show the class that was read
-  const slotted = res.reading.extras || [];
-  if (res.worn) {                       // read piece by piece: the bot took the EX out, the set is known
-    document.querySelectorAll('#ab-equipped [data-eq="extras"]').forEach((s) => { s.value = ''; });
-    const [setName, pieces] = res.worn.set || [];
-    const setSel = document.querySelector('#ab-equipped [data-eq="set"]');
-    if (setSel) setSel.value = pieces >= 5 && [...setSel.options].some((o) => o.value === setName) ? setName : '';
-  } else if (slotted.some(Boolean) && !abEquipped().extras.length) {  // fill the EX picks from the Skills tab
-    document.querySelectorAll('#ab-equipped [data-eq="extras"]').forEach((s, i) => { s.value = slotted[i] || ''; });
-  }
-  abShowWorn(res);
-  for (const [k, v] of Object.entries(res.gear)) {
-    const input = document.querySelector(`#ab-gear [data-gear="${k}"]`);
-    if (input) input.value = v;
-  }
-  const p = res.reading.panel;
-  setMsg('#ab-read-msg', [`อ่านเมื่อ ${res.reading.time}: ATK ${p.ATK} · ASPD ${p.ASPD} · Crit ${p['Crit Rate']}% แล้วใส่ค่าชุดให้ด้านล่างแล้ว`,
-    ...res.notes].join(' · '), res.notes.length ? 'bad' : 'ok');
-  $('#ab-read-again').hidden = false;
-}
-
-$('#ab-read').addEventListener('click', async () => {
-  const before = (await api('/api/stats/screen').catch(() => null))?.reading?.time;
-  const res = await api('/api/stats/screen', {}).catch(() => null);
-  if (!res?.ok) return setMsg('#ab-read-msg', 'บอทกำลังทำอย่างอื่นอยู่ หยุดบอทก่อนแล้วลองใหม่', 'bad');
-  setMsg('#ab-read-msg', 'บอทกำลังอ่านของทีละชิ้น ถอด EX แล้วอ่านหน้า Stats… (ราว 40–60 วิ)');
-  for (let i = 0; i < 150; i++) {
-    await new Promise((r) => setTimeout(r, 1000));
-    const s = await api('/api/stats/screen').catch(() => null);
-    if (s && !s.busy) {
-      if (s.reading?.time && s.reading.time !== before) return abGearFromReading();
-      if (i > 2) return setMsg('#ab-read-msg', 'อ่านไม่สำเร็จ ดูในบันทึก', 'bad');
-    }
-  }
-  setMsg('#ab-read-msg', 'นานเกินไป ดูในบันทึก', 'bad');
-});
-$('#ab-read-again').addEventListener('click', abGearFromReading);
 
 $('#ab-cards').addEventListener('change', abCount);
 $('#ab-cards-owned').addEventListener('click', () => {
@@ -1077,19 +942,15 @@ $('#ab-cards-none').addEventListener('click', () => {
 });
 $('#ab-run').addEventListener('click', async () => {
   const d = buildData();
-  const gear = Object.fromEntries([...document.querySelectorAll('#ab-gear [data-gear]')]
-    .map((i) => [i.dataset.gear, Number(i.value) || 0]));
-  setMsg('#ab-msg', `กำลังคำนวณ ${d.job}…`);
+  setMsg('#ab-msg', `กำลังเลือกให้ ${d.job}…`);
   const res = await api('/api/autobuild', {
-    job: d.job, aspd_min: Number($('#ab-aspd').value) || 0, crit_min: Number($('#ab-crit').value) || 0,
-    farm: $('#ab-mode').value === 'farm', gear, owned: abTicked(), potion: $('#ab-potion').value,
-    aspd_idle: $('#ab-idle').checked,
+    job: d.job, farm: $('#ab-mode').value === 'farm', owned: abTicked(),
   }).catch(() => null);
   if (!res?.ok) {
     $('#ab-cols').hidden = true;
-    return setMsg('#ab-msg', res?.error || 'คำนวณไม่สำเร็จ', 'bad');
+    return setMsg('#ab-msg', res?.error || 'แนะนำไม่สำเร็จ', 'bad');
   }
-  setMsg('#ab-msg', `${d.job}: ${res.now ? 'ใช้การ์ดที่ติ๊ก กับ Full Build' : 'Full Build (ยังไม่ได้ติ๊กการ์ด)'}`, 'ok');
+  setMsg('#ab-msg', `${d.job}: ${res.now ? 'ใช้การ์ดที่ติ๊ก กับแบบครบทุกอย่าง' : 'แบบครบทุกอย่าง (ยังไม่ได้ติ๊กการ์ด)'}`, 'ok');
   $('#ab-cols').hidden = false;
   $('#ab-now-col').hidden = !res.now;
   if (res.now) $('#ab-now').replaceChildren(...abResult(d, res.now));

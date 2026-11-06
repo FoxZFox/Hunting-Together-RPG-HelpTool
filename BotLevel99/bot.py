@@ -620,10 +620,12 @@ class Bot:
                 self.failures = self.restart_streak = 0
                 every = cfg.get('dismantle_every_min', 0)
                 if every and time.time() - dismantled_at >= every * 60:
-                    # Auto Gear first, so a better piece is worn before the rest goes; cards stay as picked
-                    log(f'ครบ {every:g} นาที → กด Auto Gear แล้วย่อยของ')
+                    # Auto Gear first (unless switched off), so a better piece is worn before the rest goes;
+                    # the cards stay as picked
+                    gear = cfg.get('dismantle_auto_gear', True)
+                    log(f'ครบ {every:g} นาที → ' + ('กด Auto Gear แล้วย่อยของ' if gear else 'ย่อยของ (ไม่กด Auto Gear)'))
                     dismantled_at = time.time()
-                    g.auto_equip(dismantle=True, cards=False)
+                    g.auto_equip(dismantle=True, cards=False, gear=gear)
                     continue                    # look at the screen afresh before going on
                 want = self.find_monster(todo[0])
                 if not want:
