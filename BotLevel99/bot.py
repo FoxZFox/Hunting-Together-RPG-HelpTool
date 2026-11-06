@@ -597,6 +597,7 @@ class Bot:
         done = set()
         hunt_fails = lost = 0
         near = None                     # boss whose room we start next to (a hop puts you back where you were)
+        dismantled_at = time.time()     # [boss] dismantle_every_min counts from the start
         self.hop_started = self.timed = None
         log('เริ่มฟาร์มบอส')
         while not self.stop_event.is_set():
@@ -617,6 +618,13 @@ class Bot:
                         self.wait(3)
                     continue
                 self.failures = self.restart_streak = 0
+                every = cfg.get('dismantle_every_min', 0)
+                if every and time.time() - dismantled_at >= every * 60:
+                    # Auto Gear first, so a better piece is worn before the rest goes; cards stay as picked
+                    log(f'ครบ {every:g} นาที → กด Auto Gear แล้วย่อยของ')
+                    dismantled_at = time.time()
+                    g.auto_equip(dismantle=True, cards=False)
+                    continue                    # look at the screen afresh before going on
                 want = self.find_monster(todo[0])
                 if not want:
                     log(f'ไม่รู้จักบอส "{todo[0]}" ข้ามไป')

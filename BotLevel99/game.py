@@ -890,17 +890,19 @@ class Game:
         return True
 
     # ---- Bag -> Auto Gear / Auto Card -----------------------------------
-    def auto_equip(self, dismantle=False):
+    def auto_equip(self, dismantle=False, cards=True):
         """Auto Gear + Auto Card, then optionally dismantle the leftover gear.
-        Auto Gear always goes first so a better piece is worn before the rest is dismantled."""
+        Auto Gear always goes first so a better piece is worn before the rest is dismantled.
+        cards=False leaves the cards as they are (boss mode: the player picked them)."""
         step('เปิดกระเป๋า')
         if not self.open_window(KEY_B, 'bag', MENU_BAG):
             self.log('เปิดกระเป๋าไม่ได้')
             return False
         self._read_job()
-        step('Auto Gear + Auto Card')
+        step('Auto Gear + Auto Card' if cards else 'Auto Gear')
         self.tap(AUTO_GEAR, 1.2)
-        self.tap(AUTO_CARD, 1.2)
+        if cards:
+            self.tap(AUTO_CARD, 1.2)
         if dismantle:
             step('ย่อยของ')
             self._dismantle()

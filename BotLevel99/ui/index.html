@@ -84,7 +84,7 @@
             <div data-mode-only="boss" hidden><dt>เฉลี่ยตัวละ</dt><dd id="f-per-kill">–</dd></div>
             <div><dt>รันมา</dt><dd id="f-time">–</dd></div>
             <div data-mode-only="level"><dt>กด Hunt</dt><dd id="f-hunts">0</dd></div>
-            <div data-mode-only="level"><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
+            <div><dt>ย่อยของ</dt><dd id="f-dismantled">0</dd></div>
             <div data-mode-only="boss" hidden><dt>ย้ายห้อง</dt><dd id="f-hops">0</dd></div>
             <div data-mode-only="boss" hidden><dt>การ์ดที่ได้</dt><dd id="f-cards">0</dd></div>
             <div data-mode-only="boss" hidden><dt>รู้เวลาเกิด</dt><dd id="f-timers">–</dd></div>
@@ -200,6 +200,11 @@
               <span class="field-name">บอสตายแล้วรอกี่วินาทีก่อนย้ายห้อง</span>
               <input type="number" name="after_kill_s" min="0" max="30" required>
               <span class="field-help">ระหว่างรอจะดูว่ามีหน้าต่าง Obtained! ขึ้นไหม ถ้าพลาด บอทก็ยังรู้จากช่อง Owned ของการ์ดตอนกด Hunt รอบถัดไป</span>
+            </label>
+            <label class="field">
+              <span class="field-name">ย่อยของทุกกี่นาที</span>
+              <input type="number" name="dismantle_every_min" min="0" max="600" required>
+              <span class="field-help">กด Auto Gear ให้ใส่ของดีกว่าก่อน แล้วย่อยของที่เหลือในกระเป๋า (ไม่กด Auto Card การ์ดที่เลือกไว้อยู่เหมือนเดิม) 0 = ไม่ย่อย</span>
             </label>
             <label class="field">
               <span class="field-name">เข้าห้องแล้วกดปุ่ม O ซูมกล้องออกกี่ครั้ง</span>

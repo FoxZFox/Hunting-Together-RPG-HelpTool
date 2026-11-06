@@ -39,6 +39,9 @@ SETTINGS = {  # [bot] keys the panel may change: key -> (type, min, max)
 }
 
 
+# [boss] keys newer than some config.toml files: save_boss adds them with this comment
+BOSS_ADDED = {'dismantle_every_min': 'ตอนฟาร์มบอส กด Auto Gear แล้วย่อยของทุกกี่นาที (0 = ไม่ย่อย)'}
+
 class Panel:
     def __init__(self):
         self.bot = Bot(load_config())
@@ -399,14 +402,15 @@ class Panel:
         return {'gear': gear, 'notes': notes + more, 'reading': rd, 'job': job, 'check': check,
                 'worn': worn or None, 'extras_removed': rd.get('extras_removed') or []}, None
 
-    def save_boss(self, values):
+    def save_boss(self, values):  # noqa: C901
         """Save the [boss] section's values, keeping the comments in the file."""
         targets = [str(t) for t in values.get('targets', [])]
         if any(not self.bot.find_monster(t) for t in targets):
             return 'มีชื่อบอสที่ไม่รู้จัก'
         new = {'targets': json.dumps(targets, ensure_ascii=False)}
         for key, lo, hi in (('appear_s', 2, 60), ('wait_respawn_s', 0, 600), ('after_kill_s', 0, 30), ('zoom_out_clicks', 0, 30), ('timed_wait_s', 0, 120),
-                            ('server_cooldown_min', 1, 60), ('server_min_players', 0, 12)):
+                            ('server_cooldown_min', 1, 60), ('server_min_players', 0, 12),
+                            ('dismantle_every_min', 0, 600)):
             try:
                 num = int(values.get(key))
             except (TypeError, ValueError):
@@ -430,6 +434,11 @@ class Panel:
         for key, value in new.items():
             text, n = re.subn(rf'(?m)^({key}\s*=\s*)[^#\n]*?(\s*(#.*)?)$',
                               lambda m: f'{m.group(1)}{value}{m.group(2)}', text)
+            if n == 0 and key in BOSS_ADDED:
+                # a key newer than the user's config.toml: add it at the end of [boss]
+                text, n = re.subn(r'(?ms)^(\[boss\]\n.*?)(\n*)(?=^\[|\Z)',
+                                  lambda m: f'{m.group(1)}\n{key} = {value}  # {BOSS_ADDED[key]}{m.group(2) or chr(10)}',
+                                  text, count=1)
             if n != 1:
                 return f'หา {key} ใน config.toml ไม่เจอ'
         self._write_config(text)

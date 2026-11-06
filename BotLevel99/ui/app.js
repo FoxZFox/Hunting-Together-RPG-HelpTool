@@ -664,6 +664,7 @@ function fillBoss() {
   form.elements.wait_respawn_s.value = cfg.wait_respawn_s ?? 0;
   form.elements.after_kill_s.value = cfg.after_kill_s ?? 2;
   form.elements.zoom_out_clicks.value = cfg.zoom_out_clicks ?? 10;
+  form.elements.dismantle_every_min.value = cfg.dismantle_every_min ?? 0;
   form.elements.until_card.checked = cfg.until_card ?? true;
   form.elements.follow_timers.checked = cfg.follow_timers ?? true;
   form.elements.timed_wait_s.value = cfg.timed_wait_s ?? 40;
@@ -683,6 +684,7 @@ function bossValues() {
     wait_respawn_s: Number(form.elements.wait_respawn_s.value),
     after_kill_s: Number(form.elements.after_kill_s.value),
     zoom_out_clicks: Number(form.elements.zoom_out_clicks.value),
+    dismantle_every_min: Number(form.elements.dismantle_every_min.value),
     until_card: form.elements.until_card.checked,
     follow_timers: form.elements.follow_timers.checked,
     timed_wait_s: Number(form.elements.timed_wait_s.value),
